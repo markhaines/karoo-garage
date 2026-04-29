@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="alert_bg_success">#1B5E20</color>
+    <color name="alert_bg_error">#B71C1C</color>
+    <color name="alert_text">#FFFFFF</color>
+</resources>

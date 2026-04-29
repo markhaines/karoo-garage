@@ -1,0 +1,30 @@
+[versions]
+agp = "8.5.2"
+kotlin = "1.9.24"
+kotlinxCoroutines = "1.8.1"
+kotlinxSerialization = "1.6.3"
+karooExt = "1.1.9"
+okhttp = "4.12.0"
+androidxCore = "1.13.1"
+androidxActivity = "1.9.0"
+androidxAppcompat = "1.7.0"
+androidxSecurity = "1.1.0-alpha06"
+androidxLifecycle = "2.8.3"
+material = "1.12.0"
+
+[libraries]
+karoo-ext = { module = "io.hammerhead:karoo-ext", version.ref = "karooExt" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "androidxActivity" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidxAppcompat" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "androidxSecurity" }
+androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "androidxLifecycle" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

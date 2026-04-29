@@ -1,0 +1,34 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+local.properties
+captures/
+
+# Build outputs
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets — should never be committed
+keystore.properties
+*.keystore
+*.jks
+release/
+
+# Claude
+.claude/settings.local.json
+
+# User-specific config (the .example template is checked in)
+garage.kgcfg
+*.kgcfg
+!garage.kgcfg.example

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ExtensionInfo
+    id="garage"
+    displayName="@string/app_name"
+    icon="@drawable/ic_garage">
+
+    <BonusAction
+        actionId="open-garage"
+        displayName="@string/action_open_garage" />
+
+</ExtensionInfo>

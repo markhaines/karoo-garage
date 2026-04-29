@@ -1,0 +1,7 @@
+{
+  "baseUrl": "https://home.example.com",
+  "token": "REPLACE_WITH_YOUR_LONG_LIVED_ACCESS_TOKEN",
+  "entityId": "cover.garage_door",
+  "domain": "cover",
+  "service": "toggle"
+}

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Garage</string>
+    <string name="action_open_garage">Open Garage</string>
+
+    <string name="alert_triggered_title">Garage</string>
+    <string name="alert_triggered_detail">Sending command…</string>
+    <string name="alert_failed_title">Garage failed</string>
+    <string name="alert_failed_detail_fallback">Could not reach Home Assistant</string>
+    <string name="alert_not_configured_title">Garage not set up</string>
+    <string name="alert_not_configured_detail">Open the Garage app to enter your Home Assistant URL, token, and entity.</string>
+
+    <string name="settings_intro">Configure the Home Assistant connection used by the in-ride \"Open Garage\" action. Tap and hold any field to paste from the Karoo clipboard.</string>
+    <string name="field_base_url">Home Assistant URL</string>
+    <string name="field_base_url_helper">e.g. https://home.example.com — no trailing slash</string>
+    <string name="field_token">Long-lived access token</string>
+    <string name="field_token_helper">Created in Home Assistant under your profile → Security</string>
+    <string name="field_entity_id">Entity ID</string>
+    <string name="field_entity_id_helper">e.g. cover.garage_door</string>
+    <string name="field_domain">Service domain</string>
+    <string name="field_domain_helper">e.g. cover, switch, button</string>
+    <string name="field_service">Service</string>
+    <string name="field_service_helper">e.g. toggle, open_cover, turn_on, press</string>
+
+    <string name="button_save">Save</string>
+    <string name="button_test">Test connection</string>
+
+    <string name="status_saved">Saved.</string>
+    <string name="status_invalid">Please fill every field; URL must start with http:// or https://.</string>
+    <string name="status_testing">Testing…</string>
+    <string name="status_test_ok">Test succeeded.</string>
+    <string name="status_test_failed">Test failed: %1$s</string>
+
+    <string name="import_success">Configuration imported.</string>
+    <string name="import_failed">Could not import configuration: %1$s</string>
+</resources>
