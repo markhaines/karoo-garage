@@ -28,8 +28,9 @@ in-ride alert with the error message instead.
 
 ## Status
 
-Early. Tested on Karoo 3 firmware [TODO: fill in once verified on-device].
-Issues and PRs welcome.
+Verified on a Karoo 3 running firmware **1.628.2410** (April 2026 release).
+Should work on any Karoo 3 firmware that supports karoo-ext 1.1.7+. Issues
+and PRs welcome.
 
 ## Requirements
 
@@ -50,9 +51,8 @@ Issues and PRs welcome.
 
 ## Install
 
-The latest debug APK is in the
-[Releases](https://github.com/markhaines/karoo-garage/releases) section,
-or build from source (see below).
+Pick a signed APK from the [Releases](https://github.com/markhaines/karoo-garage/releases)
+page, or build from source (see below).
 
 To put it on your Karoo:
 
@@ -174,6 +174,31 @@ To install over USB while you're iterating:
 ./gradlew :app:installDebug
 adb logcat -s GarageExtension     # tail extension logs
 ```
+
+## Releases
+
+Tagged commits matching `v*` (e.g. `v0.1.0`) trigger
+[`.github/workflows/release.yml`](./.github/workflows/release.yml), which
+builds a signed release APK with R8 minification and attaches it to a GitHub
+Release.
+
+To cut a release as a maintainer:
+
+```sh
+git tag v0.x.y
+git push --tags
+```
+
+The workflow uses these repo secrets:
+
+| Secret | Contents |
+|---|---|
+| `KEYSTORE_BASE64` | base64-encoded contents of the release keystore (`base64 -i release.keystore`) |
+| `KEYSTORE_PASSWORD` | keystore password |
+| `KEY_ALIAS` | key alias (e.g. `karoo-garage`) |
+| `KEY_PASSWORD` | key password (same as `KEYSTORE_PASSWORD` for PKCS12 keystores) |
+| `GPR_USER` | GitHub username (used to fetch `io.hammerhead:karoo-ext` from GitHub Packages) |
+| `GPR_KEY` | personal access token with `read:packages` |
 
 ## Project layout
 
