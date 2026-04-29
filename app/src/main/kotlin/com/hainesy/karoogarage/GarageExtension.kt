@@ -14,6 +14,7 @@ class GarageExtension : KarooExtension(EXTENSION_ID, BuildConfig.VERSION_NAME) {
 
     private val karooSystem by lazy { KarooSystemService(this) }
     private val configStore by lazy { ConfigStore(this) }
+    private val haClient by lazy { HomeAssistantClient(karooSystem) }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onCreate() {
@@ -56,7 +57,7 @@ class GarageExtension : KarooExtension(EXTENSION_ID, BuildConfig.VERSION_NAME) {
         )
 
         scope.launch {
-            HomeAssistantClient(config).trigger()
+            haClient.trigger(config)
                 .onFailure { error ->
                     Log.w(TAG, "HA call failed", error)
                     dispatchAlert(

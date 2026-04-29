@@ -26,6 +26,31 @@ Karoo in-ride menu
 If the call fails (network error, bad token, wrong entity), you get a red
 in-ride alert with the error message instead.
 
+The HTTP request goes through the karoo-ext SDK's network bridge
+(`OnHttpResponse` / `MakeHttpRequest`), which means the Karoo system picks
+the best path automatically: direct over WiFi when available, or tunnelled
+over Bluetooth via the Hammerhead Companion app when it isn't.
+
+## Connectivity
+
+The Karoo 3 has WiFi and Bluetooth, but no cellular modem. To reach Home
+Assistant from your bike you need one of:
+
+- **Karoo on WiFi** — works only when you're physically in range of a saved
+  network, typically the last few tens of metres of the ride home.
+- **Hammerhead Companion app paired and running** on a phone with internet.
+  The Companion app provides a Bluetooth bridge that the Karoo (and karoo-ext
+  extensions like this one) can route HTTP requests through, end-to-end. This
+  is the path that works mid-ride, anywhere your phone has signal.
+
+Latency over the BLE-tunnelled path is ~1–2 seconds per request (vs ~50ms
+direct over WiFi). For a one-shot garage-open call that's fine; the in-ride
+alert just appears with a small delay.
+
+If you see "no route to host" when testing remotely, the Karoo has no
+internet path at all — check that the Companion app is open on your phone
+and connected to the Karoo, and that your phone has working internet.
+
 ## Status
 
 Verified on a Karoo 3 running firmware **1.628.2410** (April 2026 release).

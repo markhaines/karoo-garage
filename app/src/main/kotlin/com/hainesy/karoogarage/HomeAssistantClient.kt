@@ -1,50 +1,59 @@
 package com.hainesy.karoogarage
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import io.hammerhead.karooext.KarooSystemService
+import io.hammerhead.karooext.models.HttpResponseState
+import io.hammerhead.karooext.models.OnHttpResponse
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import java.io.IOException
-import java.util.concurrent.TimeUnit
 
-class HomeAssistantClient(
-    private val config: Config,
-    private val client: OkHttpClient = defaultClient,
-) {
+/**
+ * Calls a Home Assistant service. Routes through Karoo's network stack
+ * via the karoo-ext OnHttpResponse event, so requests work whether the
+ * Karoo is on WiFi or BLE-tethered to the Hammerhead Companion app.
+ */
+class HomeAssistantClient(private val karooSystem: KarooSystemService) {
 
-    suspend fun trigger(): Result<Unit> = withContext(Dispatchers.IO) {
-        val url = "${config.baseUrl}/api/services/${config.domain}/${config.service}"
-        val body = """{"entity_id":"${config.entityId.jsonEscape()}"}"""
-            .toRequestBody(JSON_MEDIA_TYPE)
+    suspend fun trigger(config: Config, timeoutMs: Long = 15_000): Result<Unit> {
+        val params = OnHttpResponse.MakeHttpRequest(
+            method = "POST",
+            url = "${config.baseUrl}/api/services/${config.domain}/${config.service}",
+            headers = mapOf(
+                "Authorization" to "Bearer ${config.token}",
+                "Content-Type" to "application/json",
+            ),
+            body = """{"entity_id":"${config.entityId.jsonEscape()}"}""".toByteArray(),
+        )
 
-        val request = Request.Builder()
-            .url(url)
-            .header("Authorization", "Bearer ${config.token}")
-            .header("Content-Type", "application/json")
-            .post(body)
-            .build()
-
-        runCatching {
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    throw IOException("HTTP ${response.code} ${response.message}")
+        val deferred = CompletableDeferred<Result<Unit>>()
+        val consumerId = karooSystem.addConsumer<OnHttpResponse>(
+            params = params,
+            onError = { message ->
+                deferred.complete(Result.failure(IOException(message)))
+            },
+        ) { event ->
+            when (val state = event.state) {
+                is HttpResponseState.Complete -> {
+                    val result = when {
+                        state.error != null -> Result.failure(IOException(state.error))
+                        state.statusCode in 200..299 -> Result.success(Unit)
+                        else -> Result.failure(IOException("HTTP ${state.statusCode}"))
+                    }
+                    deferred.complete(result)
                 }
+                else -> Unit
             }
+        }
+
+        return try {
+            withTimeout(timeoutMs) { deferred.await() }
+        } catch (timeout: TimeoutCancellationException) {
+            karooSystem.removeConsumer(consumerId)
+            Result.failure(IOException("timed out after ${timeoutMs}ms"))
         }
     }
 
     private fun String.jsonEscape(): String =
         replace("\\", "\\\\").replace("\"", "\\\"")
-
-    companion object {
-        private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
-
-        private val defaultClient = OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
-            .build()
-    }
 }

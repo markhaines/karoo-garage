@@ -26,8 +26,8 @@ android {
         applicationId = "com.hainesy.karoogarage"
         minSdk = 23
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
     }
 
     if (canSignRelease) {
@@ -88,5 +88,4 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.okhttp)
 }

@@ -1,16 +1,18 @@
 package com.hainesy.karoogarage
 
 import android.os.Bundle
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import io.hammerhead.karooext.KarooSystemService
 import kotlinx.coroutines.launch
 
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var configStore: ConfigStore
+    private lateinit var karooSystem: KarooSystemService
+    private lateinit var haClient: HomeAssistantClient
 
     private lateinit var editBaseUrl: TextInputEditText
     private lateinit var editToken: TextInputEditText
@@ -23,6 +25,9 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         configStore = ConfigStore(this)
+        karooSystem = KarooSystemService(this)
+        karooSystem.connect { /* ignored — Test handles failure paths */ }
+        haClient = HomeAssistantClient(karooSystem)
 
         editBaseUrl = findViewById(R.id.edit_base_url)
         editToken = findViewById(R.id.edit_token)
@@ -40,6 +45,11 @@ class SettingsActivity : AppCompatActivity() {
 
         findViewById<MaterialButton>(R.id.button_save).setOnClickListener { onSave() }
         findViewById<MaterialButton>(R.id.button_test).setOnClickListener { onTest() }
+    }
+
+    override fun onDestroy() {
+        karooSystem.disconnect()
+        super.onDestroy()
     }
 
     private fun readConfig(): Config = Config(
@@ -70,7 +80,7 @@ class SettingsActivity : AppCompatActivity() {
         status.text = getString(R.string.status_testing)
 
         lifecycleScope.launch {
-            HomeAssistantClient(config).trigger()
+            haClient.trigger(config)
                 .onSuccess { status.text = getString(R.string.status_test_ok) }
                 .onFailure { error ->
                     status.text = getString(
