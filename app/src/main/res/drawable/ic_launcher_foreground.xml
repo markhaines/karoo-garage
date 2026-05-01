@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!--
+      Adaptive icon foreground. The 108dp viewport has a central 66dp safe
+      zone where content is guaranteed visible regardless of launcher mask
+      shape. The MDI 'garage-open' path is 24dp; scale 2.75 (= 66/24) and
+      translate by 21 to centre.
+
+      MDI garage-open icon by Pictogrammers, Apache 2.0 licensed:
+      https://pictogrammers.com/library/mdi/icon/garage-open/
+    -->
+    <group
+        android:translateX="21"
+        android:translateY="21"
+        android:scaleX="2.75"
+        android:scaleY="2.75">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M19,20H17V11H7V20H5V9L12,5L19,9V20M8,12H16V14H8V12Z" />
+    </group>
+</vector>

@@ -3,4 +3,5 @@
     <color name="alert_bg_success">#1B5E20</color>
     <color name="alert_bg_error">#B71C1C</color>
     <color name="alert_text">#FFFFFF</color>
+    <color name="ic_launcher_background">#1B5E20</color>
 </resources>

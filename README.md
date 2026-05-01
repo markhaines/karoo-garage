@@ -234,14 +234,16 @@ app/src/main/
 │   ├── GarageExtension.kt              # KarooExtension subclass + BonusAction
 │   ├── ConfigStore.kt                  # EncryptedSharedPreferences wrapper
 │   ├── Config.kt                       # data class
-│   ├── HomeAssistantClient.kt          # OkHttp call to /api/services/...
+│   ├── HomeAssistantClient.kt          # OnHttpResponse via karoo-ext
 │   ├── SettingsActivity.kt             # manual entry UI
 │   └── ImportConfigActivity.kt         # handles .kgcfg file open intent
 └── res/
     ├── xml/extension_info.xml          # declares the BonusAction
     ├── layout/activity_settings.xml
     ├── values/{strings,colors,themes}.xml
-    └── drawable/ic_garage.xml
+    ├── drawable/ic_garage.xml          # in-ride alert icon
+    ├── drawable/ic_launcher_foreground.xml
+    └── mipmap-*/ic_launcher.{png,xml}  # adaptive launcher icon
 ```
 
 ## Security notes
@@ -267,15 +269,14 @@ app/src/main/
   it or watch [#multiple-actions](https://github.com/markhaines/karoo-garage/issues).
 - **No phone-side companion app.** Configuration happens on the Karoo or via
   USB-C — there's no iOS/Android app to push config over Bluetooth.
-- **Tested only on Karoo 3.** It should work on Karoo 2 with karoo-ext support
-  but I haven't verified.
+- **Karoo 2 unverified.** karoo-ext supports both, but I've only run this on
+  Karoo 3 (see Status above). Reports from Karoo 2 owners welcome.
 
 ## Acknowledgements
 
-- [karoo-ext](https://github.com/hammerheadnav/karoo-ext) by SRAM/Hammerhead — the SDK that makes this possible.
+- [karoo-ext](https://github.com/hammerheadnav/karoo-ext) by SRAM/Hammerhead — the SDK that makes this possible (and provides the BLE-tunnelled HTTP transport).
 - [Home Assistant](https://www.home-assistant.io/).
-- [OkHttp](https://square.github.io/okhttp/) and
-  [kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization).
+- Garage door icon adapted from [Material Symbols](https://fonts.google.com/icons) (Apache 2.0).
 
 ## License
 
