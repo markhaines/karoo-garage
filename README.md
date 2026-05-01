@@ -5,12 +5,14 @@ toggles, or whatever you wire it to) a [Home Assistant](https://www.home-assista
 entity from the in-ride menu. Tap the **Open Garage** action on your Karoo and
 it fires a single REST call at your Home Assistant.
 
-The original use case: roll up the driveway, tap the screen, garage opens, no
+The original use case: roll up the driveway, tap the assigned button combo, garage door opens, no
 hands off the bars.
 
 Works with any Home Assistant entity that accepts a service call — covers,
 switches, buttons, scripts, scenes, automations. Configure the URL, token,
 entity, and service in-app.
+
+WARNING: This extension was 100% vibe coded. I have no idea what I'm doing. If you install it your bike could explode.  I have it running on my Karoo3 and it works perfectly however. My bike is yet to explode.
 
 ## How it works
 
