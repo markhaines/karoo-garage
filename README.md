@@ -120,6 +120,13 @@ spare you from typing a 180-character token on a touch screen.
 5. You'll see "Configuration imported." The file is read once into encrypted
    storage; the file itself can be deleted.
 
+This works because tapping the file in the Karoo's file manager grants the
+app a `content://` URI for it. Don't try to shortcut it over adb: a file
+pushed to `Download` and opened with a raw `file://` path fails with a
+permission error under scoped storage, because the app has no storage
+permission. If you have adb, use `push-config.sh` instead (Option C) — it
+targets a path the app can always read.
+
 ### Option B — type it on the Karoo
 
 1. Launch the **Garage** app from the Karoo's app drawer.
@@ -128,16 +135,21 @@ spare you from typing a 180-character token on a touch screen.
 3. Tap **Save**, then **Test connection** to fire a real service call against
    the configured entity. A green "Test succeeded." means you're done.
 
-### Option C — `tools/push-config.sh` (developer convenience)
+### Option C — `tools/push-config.sh` (the adb route)
 
 For people building from source who already have `adb`:
 
 ```sh
-./tools/push-config.sh path/to/garage.kgcfg
+./tools/push-config.sh path/to/garage.kgcfg            # release build
+./tools/push-config.sh path/to/garage.kgcfg --debug    # debug build
 ```
 
-This pushes the file to the Karoo and triggers the import activity in one
-step.
+This pushes the file to the app's own external-files directory
+(`/sdcard/Android/data/<package>/files/`), which the app can read without
+any storage permission, triggers the import activity, and then deletes the
+file from the device (it contains your token in plaintext). Pass `--debug`
+(or a full package name) as the second argument if you installed the debug
+build instead of the release one.
 
 ## Set up the in-ride button
 
