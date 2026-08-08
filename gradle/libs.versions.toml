@@ -1,6 +1,6 @@
 [versions]
 agp = "8.5.2"
-kotlin = "1.9.24"
+kotlin = "2.0.0"
 kotlinxCoroutines = "1.8.1"
 kotlinxSerialization = "1.6.3"
 karooExt = "1.1.9"
@@ -10,9 +10,11 @@ androidxAppcompat = "1.7.0"
 androidxSecurity = "1.1.0-alpha06"
 androidxLifecycle = "2.8.3"
 material = "1.12.0"
+glance = "1.1.1"
 
 [libraries]
 karoo-ext = { module = "io.hammerhead:karoo-ext", version.ref = "karooExt" }
+androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -26,3 +28,4 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

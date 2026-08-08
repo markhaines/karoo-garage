@@ -185,6 +185,22 @@ file from the device (it contains your token in plaintext). Pass `--debug`
 (or a full package name) as the second argument if you installed the debug
 build instead of the release one.
 
+## The in-ride data field — state display + tap to trigger
+
+v1.1 adds a graphical **Garage** data field, which does two jobs at once:
+
+- **Shows the entity's live state** ("OPEN", "CLOSED", "OPENING", …),
+  polled every 20 seconds while the field is on screen — visual confirmation
+  the door actually moved, or an early warning that it never closed.
+- **Fires the configured action when tapped.** This is the trigger for
+  riders without a SRAM AXS controller: no hardware button needed, the
+  field itself is the button.
+
+To add it: **Profiles → edit a ride page → add a data field → Extensions →
+Garage**. It sizes from a single cell up to a full-width tile. After a tap
+the field fast-polls for half a minute so you see the opening → open
+transition happen.
+
 ## Set up the in-ride button
 
 The extension exposes a **BonusAction** named "Open Garage". Karoo OS lets you

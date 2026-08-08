@@ -11,6 +11,13 @@
     <string name="alert_not_configured_detail">Open the Garage app to connect it to Home Assistant.</string>
     <string name="alert_reauth_detail">Login expired — open the Garage app and log in again.</string>
 
+    <string name="datatype_garage_name">Garage</string>
+    <string name="datatype_garage_description">Live garage state — tap the field to fire the configured action. No AXS controller needed.</string>
+    <string name="field_not_configured">SET UP</string>
+    <string name="field_auth_expired">LOG IN</string>
+    <string name="field_sending">SENDING…</string>
+    <string name="field_tap_hint">tap to toggle</string>
+
     <string name="settings_intro_oauth">Connect to Home Assistant by logging in with your normal HA username and password. No long-lived token needed.</string>
     <string name="settings_intro">Configure the Home Assistant connection with a long-lived access token. Tap and hold any field to paste from the Karoo clipboard.</string>
 

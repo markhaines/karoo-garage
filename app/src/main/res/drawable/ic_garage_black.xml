@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!--
+      DataType icon for the field picker: the picker renders on a light card
+      and doesn't resolve theme-attr tints, so this is a plain black variant
+      of ic_garage (which stays white for in-ride alerts).
+    -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M3,21V11l9,-7 9,7v10h-7v-7h-4v7H3zM5,19h2v-7h10v7h2v-8.05l-7,-5.45 -7,5.45V19z"/>
+</vector>

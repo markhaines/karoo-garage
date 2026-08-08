@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.compose)
 }
 
 // Release signing is opt-in via env vars. If all four are set and the keystore
@@ -26,8 +27,8 @@ android {
         applicationId = "com.hainesy.karoogarage"
         minSdk = 23
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.0.0"
+        versionCode = 6
+        versionName = "1.1.0"
     }
 
     if (canSignRelease) {
@@ -73,11 +74,13 @@ android {
 
     buildFeatures {
         buildConfig = true
+        compose = true
     }
 }
 
 dependencies {
     implementation(libs.karoo.ext)
+    implementation(libs.androidx.glance.appwidget)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.ktx)

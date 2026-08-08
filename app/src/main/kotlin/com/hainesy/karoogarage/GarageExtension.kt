@@ -1,99 +1,34 @@
 package com.hainesy.karoogarage
 
 import android.util.Log
-import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
-import io.hammerhead.karooext.models.InRideAlert
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 
 class GarageExtension : KarooExtension(EXTENSION_ID, BuildConfig.VERSION_NAME) {
 
-    private val karooSystem by lazy { KarooSystemService(this) }
-    private val configStore by lazy { ConfigStore(this) }
-    private val haClient by lazy {
-        val http = KarooHttp(karooSystem)
-        HomeAssistantClient(http, AuthClient(http), configStore)
+    override val types by lazy {
+        listOf(GarageDataType(EXTENSION_ID))
     }
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onCreate() {
         super.onCreate()
-        karooSystem.connect { connected ->
-            Log.d(TAG, "Karoo system connected=$connected")
-        }
+        // Bind to the Karoo system now, not lazily on the first press —
+        // dispatch() silently drops alerts until the connection is up.
+        GarageRuntime.warm(this)
     }
 
     override fun onDestroy() {
-        scope.cancel()
-        karooSystem.disconnect()
+        // stopView isn't guaranteed on host teardown; drop any leaked view
+        // refcounts so the state poller can't run on with no views.
+        GarageRuntime.reset()
         super.onDestroy()
     }
 
     override fun onBonusAction(actionId: String) {
         Log.d(TAG, "onBonusAction actionId=$actionId")
         when (actionId) {
-            ACTION_OPEN_GARAGE -> handleOpenGarage()
+            ACTION_OPEN_GARAGE -> GarageRuntime.trigger(this)
             else -> Log.w(TAG, "Unknown actionId=$actionId")
         }
-    }
-
-    private fun handleOpenGarage() {
-        val state = configStore.load()
-        if (state == null || !state.isValid()) {
-            dispatchAlert(
-                title = getString(R.string.alert_not_configured_title),
-                detail = getString(R.string.alert_not_configured_detail),
-                isError = true,
-            )
-            return
-        }
-
-        dispatchAlert(
-            title = getString(R.string.alert_triggered_title),
-            detail = getString(R.string.alert_triggered_detail),
-            isError = false,
-            autoDismissMs = 2_000L,
-        )
-
-        scope.launch {
-            haClient.trigger()
-                .onFailure { error ->
-                    Log.w(TAG, "HA call failed", error)
-                    val detail = if (error is ReauthRequiredException) {
-                        getString(R.string.alert_reauth_detail)
-                    } else {
-                        error.message ?: getString(R.string.alert_failed_detail_fallback)
-                    }
-                    dispatchAlert(
-                        title = getString(R.string.alert_failed_title),
-                        detail = detail,
-                        isError = true,
-                    )
-                }
-        }
-    }
-
-    private fun dispatchAlert(
-        title: String,
-        detail: String,
-        isError: Boolean,
-        autoDismissMs: Long? = 4_000L,
-    ) {
-        karooSystem.dispatch(
-            InRideAlert(
-                id = "garage-${if (isError) "error" else "ok"}",
-                icon = R.drawable.ic_garage,
-                title = title,
-                detail = detail,
-                autoDismissMs = autoDismissMs,
-                backgroundColor = if (isError) R.color.alert_bg_error else R.color.alert_bg_success,
-                textColor = R.color.alert_text,
-            ),
-        )
     }
 
     companion object {

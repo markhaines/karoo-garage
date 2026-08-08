@@ -17,3 +17,6 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
+
+# Glance instantiates ActionCallback implementations reflectively.
+-keep class com.hainesy.karoogarage.OpenGarageAction { *; }

@@ -86,6 +86,28 @@ class EntityRepository(private val http: KarooHttp) {
     }
 
     /**
+     * Returns the entity's current state string ("open", "closed", "on", …).
+     * A 404 (entity gone) reports as "unknown" rather than an error.
+     */
+    suspend fun fetchState(
+        baseUrl: String,
+        accessToken: String,
+        entityId: String,
+    ): Result<String> = http.request(
+        method = "GET",
+        url = "$baseUrl/api/states/$entityId",
+        headers = mapOf("Authorization" to "Bearer $accessToken"),
+        waitForConnection = false,
+    ).mapCatching { response ->
+        when {
+            response.statusCode == 404 -> "unknown"
+            !response.isSuccess -> throw HttpStatusException(response.statusCode)
+            else -> json.parseToJsonElement(response.bodyText())
+                .jsonObject["state"]?.jsonPrimitive?.content ?: "unknown"
+        }
+    }
+
+    /**
      * Returns the instance's advertised public URL (HA Settings → System →
      * Network → "Internet" URL), or null when none is configured.
      */

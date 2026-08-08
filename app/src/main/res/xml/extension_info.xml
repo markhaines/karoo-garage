@@ -8,4 +8,11 @@
         actionId="open-garage"
         displayName="@string/action_open_garage" />
 
+    <DataType
+        typeId="garage"
+        displayName="@string/datatype_garage_name"
+        description="@string/datatype_garage_description"
+        graphical="true"
+        icon="@drawable/ic_garage_black" />
+
 </ExtensionInfo>
