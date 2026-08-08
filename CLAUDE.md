@@ -1,17 +1,17 @@
 # karoo-garage
 
 Hammerhead Karoo 3 extension that calls Home Assistant to open the garage door
-when triggered from the in-ride menu.
+when triggered from the in-ride menu. v0.2.0 authenticates via HA's native
+OAuth (login_flow API + refresh tokens); legacy long-lived-token mode remains.
 
-## Toolchain (already configured globally on this machine)
+## Toolchain
 
 | Tool | Path | Notes |
 |---|---|---|
-| JDK 17 | `/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home` | `JAVA_HOME` exported in `~/.zshrc` |
-| Android SDK | `/opt/homebrew/share/android-commandlinetools` | `ANDROID_HOME` exported in `~/.zshrc`. Includes `platforms;android-34`, `build-tools;34.0.0`, `platform-tools` |
-| `adb` | `$ANDROID_HOME/platform-tools/adb` | on PATH |
-| `gh` | logged in as `markhaines`, scope includes `read:packages` |
-| `~/.gradle/gradle.properties` | mode 0600 | holds `gpr.user=markhaines` and `gpr.key=<gh token>` for GitHub Packages auth — used by Gradle to fetch `io.hammerhead:karoo-ext` |
+| JDK 17 | `/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home` | export as `JAVA_HOME` if not already set (the 2026-07-31 Mac mini rebuild lost the `~/.zshrc` exports) |
+| Android SDK | `/opt/homebrew/share/android-commandlinetools` | export as `ANDROID_HOME`. Needs `platforms;android-34`, `build-tools;34.0.0`, `platform-tools` (`sdkmanager --sdk_root=$ANDROID_HOME ...` reinstalls them) |
+| `adb` | `$ANDROID_HOME/platform-tools/adb` | |
+| karoo-ext dep | mavenLocal OR GitHub Packages | Preferred: clone hammerheadnav/karoo-ext at the pinned tag, `./gradlew :lib:publishToMavenLocal` — no token needed. Alternative: `gpr.user`/`gpr.key` in `~/.gradle/gradle.properties` (gh token with `read:packages`). |
 
 ## Build
 

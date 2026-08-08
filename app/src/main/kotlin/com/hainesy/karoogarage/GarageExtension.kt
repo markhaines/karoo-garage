@@ -14,7 +14,10 @@ class GarageExtension : KarooExtension(EXTENSION_ID, BuildConfig.VERSION_NAME) {
 
     private val karooSystem by lazy { KarooSystemService(this) }
     private val configStore by lazy { ConfigStore(this) }
-    private val haClient by lazy { HomeAssistantClient(karooSystem) }
+    private val haClient by lazy {
+        val http = KarooHttp(karooSystem)
+        HomeAssistantClient(http, AuthClient(http), configStore)
+    }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onCreate() {
@@ -39,8 +42,8 @@ class GarageExtension : KarooExtension(EXTENSION_ID, BuildConfig.VERSION_NAME) {
     }
 
     private fun handleOpenGarage() {
-        val config = configStore.load()
-        if (config == null || !config.isValid()) {
+        val state = configStore.load()
+        if (state == null || !state.isValid()) {
             dispatchAlert(
                 title = getString(R.string.alert_not_configured_title),
                 detail = getString(R.string.alert_not_configured_detail),
@@ -57,12 +60,17 @@ class GarageExtension : KarooExtension(EXTENSION_ID, BuildConfig.VERSION_NAME) {
         )
 
         scope.launch {
-            haClient.trigger(config)
+            haClient.trigger()
                 .onFailure { error ->
                     Log.w(TAG, "HA call failed", error)
+                    val detail = if (error is ReauthRequiredException) {
+                        getString(R.string.alert_reauth_detail)
+                    } else {
+                        error.message ?: getString(R.string.alert_failed_detail_fallback)
+                    }
                     dispatchAlert(
                         title = getString(R.string.alert_failed_title),
-                        detail = error.message ?: getString(R.string.alert_failed_detail_fallback),
+                        detail = detail,
                         isError = true,
                     )
                 }

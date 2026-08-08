@@ -8,11 +8,17 @@
     <string name="alert_failed_title">Garage failed</string>
     <string name="alert_failed_detail_fallback">Could not reach Home Assistant</string>
     <string name="alert_not_configured_title">Garage not set up</string>
-    <string name="alert_not_configured_detail">Open the Garage app to enter your Home Assistant URL, token, and entity.</string>
+    <string name="alert_not_configured_detail">Open the Garage app to connect it to Home Assistant.</string>
+    <string name="alert_reauth_detail">Login expired — open the Garage app and log in again.</string>
 
-    <string name="settings_intro">Configure the Home Assistant connection used by the in-ride \"Open Garage\" action. Tap and hold any field to paste from the Karoo clipboard.</string>
+    <string name="settings_intro_oauth">Connect to Home Assistant by logging in with your normal HA username and password. No long-lived token needed.</string>
+    <string name="settings_intro">Configure the Home Assistant connection with a long-lived access token. Tap and hold any field to paste from the Karoo clipboard.</string>
+
     <string name="field_base_url">Home Assistant URL</string>
     <string name="field_base_url_helper">e.g. https://home.example.com — no trailing slash</string>
+    <string name="field_username">Username</string>
+    <string name="field_password">Password</string>
+    <string name="field_mfa">Verification code (MFA)</string>
     <string name="field_token">Long-lived access token</string>
     <string name="field_token_helper">Created in Home Assistant under your profile → Security</string>
     <string name="field_entity_id">Entity ID</string>
@@ -22,14 +28,41 @@
     <string name="field_service">Service</string>
     <string name="field_service_helper">e.g. toggle, open_cover, turn_on, press</string>
 
+    <string name="button_login">Log in</string>
+    <string name="button_sign_in">Sign in</string>
+    <string name="button_back">Back</string>
+    <string name="button_show_legacy">Use a long-lived token instead</string>
+    <string name="button_hide_legacy">Back to login setup</string>
+    <string name="button_pick_entity">Choose entity</string>
+    <string name="button_logout">Log out</string>
     <string name="button_save">Save</string>
     <string name="button_test">Test connection</string>
 
+    <string name="label_service">Action to call</string>
+    <string name="text_discovered_instance">Found %1$s at %2$s — tap to use</string>
+    <string name="text_logged_in_as">Logged in as %1$s on %2$s</string>
+    <string name="text_no_entity">No entity chosen yet</string>
+    <string name="login_intro">Signing in to %1$s</string>
+
     <string name="status_saved">Saved.</string>
     <string name="status_invalid">Please fill every field; URL must start with http:// or https://.</string>
+    <string name="status_invalid_url">Enter your Home Assistant URL first (http:// or https://).</string>
+    <string name="status_invalid_credentials">Enter your username and password.</string>
+    <string name="status_logging_in">Signing in…</string>
+    <string name="status_login_failed">Sign-in failed: %1$s</string>
+    <string name="status_mfa_required">Enter the verification code from your authenticator app.</string>
+    <string name="status_logged_in">Signed in. Now choose the entity to control.</string>
+    <string name="status_logged_out">Logged out.</string>
     <string name="status_testing">Testing…</string>
     <string name="status_test_ok">Test succeeded.</string>
     <string name="status_test_failed">Test failed: %1$s</string>
+    <string name="status_pick_entity_first">Choose an entity first.</string>
+
+    <string name="picker_title">Choose an entity</string>
+    <string name="picker_filter_hint">Filter…</string>
+    <string name="picker_loading">Loading entities…</string>
+    <string name="picker_error">Could not load entities: %1$s</string>
+    <string name="picker_empty">No controllable entities found.</string>
 
     <string name="import_success">Configuration imported.</string>
     <string name="import_failed">Could not import configuration: %1$s</string>

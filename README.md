@@ -9,8 +9,14 @@ The original use case: roll up the driveway, tap the assigned button combo, gara
 hands off the bars.
 
 Works with any Home Assistant entity that accepts a service call — covers,
-switches, buttons, scripts, scenes, automations. Configure the URL, token,
-entity, and service in-app.
+switches, buttons, scripts, scenes, automations.
+
+**v0.2.0: log in, don't paste tokens.** Setup is now: enter (or tap the
+auto-discovered) HA URL, type your normal HA username and password on the
+Karoo, then pick your garage door from a list. The app uses Home Assistant's
+own OAuth flow (the same one the official phone apps use) and silently renews
+its access. No long-lived token, no 180-character strings, no cable. The old
+token-based setup still works under "Use a long-lived token instead".
 
 WARNING: This extension was 100% vibe coded. I have no idea what I'm doing. If you install it your bike could explode.  I have it running on my Karoo3 and it works perfectly however. My bike is yet to explode.
 
@@ -19,8 +25,9 @@ WARNING: This extension was 100% vibe coded. I have no idea what I'm doing. If y
 ```
 Karoo in-ride menu
   └─ Open Garage  (BonusAction)
+      └─ [OAuth mode] refresh the 30-min access token if stale
       └─ POST {your HA URL}/api/services/{domain}/{service}
-          Authorization: Bearer {your long-lived token}
+          Authorization: Bearer {access token, or legacy long-lived token}
           { "entity_id": "{your entity}" }
       └─ in-ride alert: "Garage" / "Sending command…"
 ```
@@ -95,10 +102,38 @@ To put it on your Karoo:
 
 ## Configure
 
-There are two ways to enter your Home Assistant settings — one designed to
-spare you from typing a 180-character token on a touch screen.
+### The normal way — log in (v0.2.0+)
 
-### Option A — drop a config file (recommended)
+1. Launch the **Garage** app from the Karoo's app drawer.
+2. Enter your Home Assistant URL. If the Karoo is on the same WiFi as HA, the
+   app usually discovers it via mDNS — a "Found Home Assistant at …" line
+   appears; tap it instead of typing.
+3. Tap **Log in** and enter your normal HA username and password (plus your
+   MFA code if you use one). This is HA's own login flow: the app never sees
+   more privilege than your account has, and the session shows up in your HA
+   profile's refresh-token list where you can revoke it any time.
+4. Pick the entity to control from the list (covers first), choose the
+   service (`toggle` is the default for covers), then **Test connection**.
+
+The app stores a refresh token in encrypted storage and silently renews its
+30-minute access tokens, including mid-ride over the Companion-app bridge.
+
+Notes:
+
+- If you don't ride for 90+ days, HA expires the idle session and the next
+  tap shows "Login expired — open the Garage app". Log in again; 30 seconds.
+- Reinstalled HA? Same thing: log in again. No cables, no token minting.
+- Prefer least privilege? Create a dedicated non-admin HA user (e.g.
+  `karoo`) and log the Karoo in as that.
+
+### The old ways — long-lived token
+
+Tap **"Use a long-lived token instead"** on the app's first screen for the
+classic five-field setup, or use one of the file-based routes below. These
+remain for people who prefer a dedicated token (or run an HA old enough not
+to have the login-flow API).
+
+### Option A — drop a config file
 
 1. Copy [`garage.kgcfg.example`](./garage.kgcfg.example) and fill in your real
    values. Save it as `garage.kgcfg`:
@@ -129,7 +164,7 @@ targets a path the app can always read.
 
 ### Option B — type it on the Karoo
 
-1. Launch the **Garage** app from the Karoo's app drawer.
+1. Launch the **Garage** app, tap **"Use a long-lived token instead"**.
 2. Fill in each field. Long-press a field to paste from the Karoo's clipboard
    if you've previously copied a value there.
 3. Tap **Save**, then **Test connection** to fire a real service call against
@@ -188,17 +223,18 @@ You'll need:
 - **JDK 17** (Temurin, OpenJDK, or Zulu — anything 17.x).
 - **Android SDK** with **platforms;android-34** and
   **build-tools;34.0.0** installed.
-- **A GitHub personal access token with `read:packages` scope** —
-  `io.hammerhead:karoo-ext` is hosted on GitHub Packages, which requires auth
-  even for public reads. Either:
-
-  ```sh
-  gh auth refresh -h github.com -s read:packages
-  ```
-
-  and add `gpr.user=<your-github-username>` and `gpr.key=<your-gh-token>` to
-  `~/.gradle/gradle.properties`, **or** set `GITHUB_ACTOR` and `GITHUB_TOKEN`
-  environment variables (the build reads either).
+- **The karoo-ext dependency**, via either route:
+  - **GitHub Packages** (needs a token with `read:packages` — GitHub requires
+    auth even for public reads): run
+    `gh auth refresh -h github.com -s read:packages`, then add
+    `gpr.user=<your-github-username>` and `gpr.key=<your-gh-token>` to
+    `~/.gradle/gradle.properties`, or set `GITHUB_ACTOR` and `GITHUB_TOKEN`
+    environment variables.
+  - **No token at all**: clone
+    [hammerheadnav/karoo-ext](https://github.com/hammerheadnav/karoo-ext) at
+    the tag pinned in `gradle/libs.versions.toml` and run
+    `./gradlew :lib:publishToMavenLocal` there — this build checks
+    `mavenLocal()` for `io.hammerhead` first.
 
 Then:
 
@@ -246,14 +282,20 @@ app/src/main/
 ├── AndroidManifest.xml                 # extension service + activities
 ├── kotlin/com/hainesy/karoogarage/
 │   ├── GarageExtension.kt              # KarooExtension subclass + BonusAction
+│   ├── KarooHttp.kt                    # HTTP via the karoo-ext bridge
+│   ├── AuthClient.kt                   # HA login_flow + token endpoints
+│   ├── HomeAssistantClient.kt          # service call + silent token refresh
+│   ├── EntityRepository.kt             # compact entity list via /api/template
+│   ├── HaDiscovery.kt                  # mDNS discovery of HA on the LAN
 │   ├── ConfigStore.kt                  # EncryptedSharedPreferences wrapper
-│   ├── Config.kt                       # data class
-│   ├── HomeAssistantClient.kt          # OnHttpResponse via karoo-ext
-│   ├── SettingsActivity.kt             # manual entry UI
+│   ├── Config.kt                       # legacy .kgcfg import shape
+│   ├── SettingsActivity.kt             # login / entity picker / legacy UI
+│   ├── EntityPickerActivity.kt         # tap-to-choose entity list
 │   └── ImportConfigActivity.kt         # handles .kgcfg file open intent
 └── res/
     ├── xml/extension_info.xml          # declares the BonusAction
     ├── layout/activity_settings.xml
+    ├── layout/activity_entity_picker.xml
     ├── values/{strings,colors,themes}.xml
     ├── drawable/ic_garage.xml          # in-ride alert icon
     ├── drawable/ic_launcher_foreground.xml
@@ -262,19 +304,23 @@ app/src/main/
 
 ## Security notes
 
-- The long-lived access token is stored in Android `EncryptedSharedPreferences`
-  (AES-256 GCM, master key in the Android KeyStore). It's not in plain
-  SharedPreferences and never gets logged.
-- The token is never embedded in the APK.
+- Credentials (the OAuth refresh token, or a legacy long-lived token) are
+  stored in Android `EncryptedSharedPreferences` (AES-256 GCM, master key in
+  the Android KeyStore). Nothing is in plain SharedPreferences or logs, and
+  your password itself is never stored — it's exchanged for tokens during
+  login and discarded.
+- No credentials are embedded in the APK.
 - The HTTP client trusts the system trust store. Self-signed Home Assistant
   certs won't validate. Use Let's Encrypt via your reverse proxy, or front
   Home Assistant with [Caddy](https://caddyserver.com/) /
   [Nginx Proxy Manager](https://nginxproxymanager.com/) /
   [Traefik](https://traefik.io/).
-- A long-lived access token gives whoever holds it full Home Assistant API
-  access. Anyone with your unlocked Karoo and the Garage app can fire the
-  configured service call — make sure that's a tradeoff you're happy with.
-  Worth restricting via Home Assistant's user/auth model if you're worried.
+- Either credential acts with the logged-in user's full permissions. Anyone
+  with your unlocked Karoo and the Garage app can fire the configured service
+  call — make sure that's a tradeoff you're happy with. For least privilege,
+  create a dedicated non-admin HA user for the Karoo; OAuth sessions also
+  appear in that user's profile as revocable refresh tokens, so "log the
+  bike out" is one click in HA.
 
 ## Limitations
 

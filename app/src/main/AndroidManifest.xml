@@ -23,6 +23,11 @@
         </activity>
 
         <activity
+            android:name=".EntityPickerActivity"
+            android:exported="false"
+            android:label="@string/picker_title" />
+
+        <activity
             android:name=".ImportConfigActivity"
             android:exported="true"
             android:label="@string/app_name"
