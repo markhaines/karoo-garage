@@ -11,11 +11,12 @@ hands off the bars.
 Works with any Home Assistant entity that accepts a service call — covers,
 switches, buttons, scripts, scenes, automations.
 
-**v0.2.0: log in, don't paste tokens.** Setup is now: enter (or tap the
-auto-discovered) HA URL, type your normal HA username and password on the
+**v1.0: log in, don't paste tokens.** Setup is: tap the auto-discovered HA
+URL (or type it), sign in with your normal HA username and password on the
 Karoo, then pick your garage door from a list. The app uses Home Assistant's
-own OAuth flow (the same one the official phone apps use) and silently renews
-its access. No long-lived token, no 180-character strings, no cable. The old
+own OAuth flow (the same one the official phone apps use), silently renews
+its access, and offers to switch to your HA's public URL so the button works
+mid-ride. No long-lived token, no 180-character strings, no cable. The old
 token-based setup still works under "Use a long-lived token instead".
 
 WARNING: This extension was 100% vibe coded. I have no idea what I'm doing. If you install it your bike could explode.  I have it running on my Karoo3 and it works perfectly however. My bike is yet to explode.
@@ -62,9 +63,10 @@ and connected to the Karoo, and that your phone has working internet.
 
 ## Status
 
-Verified on a Karoo 3 running firmware **1.628.2410** (April 2026 release).
-Should work on any Karoo 3 firmware that supports karoo-ext 1.1.7+. Issues
-and PRs welcome.
+v1.0.0 verified end to end (login, entity picker, public-URL switch, in-ride
+action) on a Karoo 3 running firmware **1.628.2410** (April 2026 release),
+against Home Assistant 2026.8. Built against karoo-ext 1.1.9; should work on
+any Karoo 3 firmware that supports karoo-ext 1.1.x. Issues and PRs welcome.
 
 ## Requirements
 
@@ -73,15 +75,13 @@ and PRs welcome.
 - A **Home Assistant** install reachable from your Karoo's network. Public
   HTTPS works (Nabu Casa, Caddy, your own reverse proxy); LAN-only works too
   if your Karoo always rides home before you trigger the action.
-- A **long-lived access token** in Home Assistant. Create one at:
-
-  > Home Assistant → click your user (bottom-left) → **Security** tab → scroll
-  > to **Long-lived access tokens** → **Create token**.
-
-  Copy it once — Home Assistant only shows it the first time.
-- The **entity ID** of whatever you want to control. Find it under
-  Home Assistant → Developer Tools → States. For a typical Home Assistant
-  garage door cover, this looks like `cover.garage_door`.
+- Your **Home Assistant username and password** — that's it. The app logs in
+  with HA's own auth flow and shows you a list of controllable entities to
+  pick from, so you don't need to mint tokens or look up entity IDs.
+- Only for the legacy token mode: a **long-lived access token** (Home
+  Assistant → your user → **Security** → **Long-lived access tokens**) and
+  the **entity ID** of what you want to control (Developer Tools → States,
+  e.g. `cover.garage_door`).
 
 ## Install
 
@@ -96,13 +96,13 @@ To put it on your Karoo:
    **Android debug bridge** (USB debugging).
 3. Plug the Karoo into your computer with USB-C.
 4. Either:
-   - **adb route**: `adb install -r app-debug.apk`, or
+   - **adb route**: `adb install -r karoo-garage-1.0.0.apk`, or
    - **drag-and-drop route**: copy the APK to the Karoo's storage in any
      folder, open the file from the Karoo's file manager, tap **Install**.
 
 ## Configure
 
-### The normal way — log in (v0.2.0+)
+### The normal way — log in (v1.0+)
 
 1. Launch the **Garage** app from the Karoo's app drawer.
 2. Enter your Home Assistant URL. If the Karoo is on the same WiFi as HA, the
@@ -117,7 +117,10 @@ To put it on your Karoo:
    more privilege than your account has, and the session shows up in your HA
    profile's refresh-token list where you can revoke it any time.
 4. Pick the entity to control from the list (covers first), choose the
-   service (`toggle` is the default for covers), then **Test connection**.
+   service (`toggle` is the default for covers), then **Test connection** —
+   it fires the real service call, so expect your door to move. A dialog
+   then points you at the final step (binding the ride button, below), and
+   **Done** exits the app.
 
 The app stores a refresh token in encrypted storage and silently renews its
 30-minute access tokens, including mid-ride over the Companion-app bridge.
@@ -132,10 +135,10 @@ Notes:
 
 ### The old ways — long-lived token
 
-Tap **"Use a long-lived token instead"** on the app's first screen for the
-classic five-field setup, or use one of the file-based routes below. These
-remain for people who prefer a dedicated token (or run an HA old enough not
-to have the login-flow API).
+Two file-based routes remain for people who prefer a dedicated token (or
+run an HA old enough not to have the login-flow API). Both feed the form
+behind **"Use a long-lived token instead"** on the app's first screen —
+nobody should be typing a 180-character token on a touchscreen by hand.
 
 ### Option A — drop a config file
 
@@ -163,18 +166,10 @@ This works because tapping the file in the Karoo's file manager grants the
 app a `content://` URI for it. Don't try to shortcut it over adb: a file
 pushed to `Download` and opened with a raw `file://` path fails with a
 permission error under scoped storage, because the app has no storage
-permission. If you have adb, use `push-config.sh` instead (Option C) — it
+permission. If you have adb, use `push-config.sh` instead (Option B) — it
 targets a path the app can always read.
 
-### Option B — type it on the Karoo
-
-1. Launch the **Garage** app, tap **"Use a long-lived token instead"**.
-2. Fill in each field. Long-press a field to paste from the Karoo's clipboard
-   if you've previously copied a value there.
-3. Tap **Save**, then **Test connection** to fire a real service call against
-   the configured entity. A green "Test succeeded." means you're done.
-
-### Option C — `tools/push-config.sh` (the adb route)
+### Option B — `tools/push-config.sh` (the adb route)
 
 For people building from source who already have `adb`:
 
@@ -264,7 +259,7 @@ Release.
 To cut a release as a maintainer:
 
 ```sh
-git tag v0.x.y
+git tag v1.x.y
 git push --tags
 ```
 
@@ -302,7 +297,9 @@ app/src/main/
     ├── layout/activity_entity_picker.xml
     ├── values/{strings,colors,themes}.xml
     ├── drawable/ic_garage.xml          # in-ride alert icon
-    ├── drawable/ic_launcher_foreground.xml
+    ├── drawable/bg_discovered.xml      # green "found HA" box
+    ├── drawable/ic_launcher_foreground.xml   # icon: garage + bike
+    ├── drawable/ic_launcher_monochrome.xml   # themed-icon silhouette
     └── mipmap-*/ic_launcher.{png,xml}  # adaptive launcher icon
 ```
 
