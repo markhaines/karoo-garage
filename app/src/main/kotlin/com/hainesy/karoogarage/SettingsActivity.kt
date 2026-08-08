@@ -392,7 +392,10 @@ class SettingsActivity : AppCompatActivity() {
         status.text = getString(R.string.status_testing)
         lifecycleScope.launch {
             haClient.trigger()
-                .onSuccess { status.text = getString(R.string.status_test_ok) }
+                .onSuccess {
+                    status.text = getString(R.string.status_test_ok)
+                    showLastStepDialog()
+                }
                 .onFailure { error ->
                     status.text = getString(
                         R.string.status_test_failed,
@@ -400,6 +403,20 @@ class SettingsActivity : AppCompatActivity() {
                     )
                 }
         }
+    }
+
+    /**
+     * The app can't bind the in-ride control itself — that lives in Karoo OS —
+     * so a successful test ends by pointing the user at the one step left.
+     */
+    private fun showLastStepDialog() {
+        if (isFinishing) return
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.dialog_last_step_title)
+            .setMessage(R.string.dialog_last_step_message)
+            .setPositiveButton(R.string.dialog_last_step_done) { _, _ -> finish() }
+            .setNegativeButton(R.string.dialog_last_step_stay, null)
+            .show()
     }
 
     private fun onLogout() {
@@ -465,7 +482,10 @@ class SettingsActivity : AppCompatActivity() {
         status.text = getString(R.string.status_testing)
         lifecycleScope.launch {
             haClient.trigger()
-                .onSuccess { status.text = getString(R.string.status_test_ok) }
+                .onSuccess {
+                    status.text = getString(R.string.status_test_ok)
+                    showLastStepDialog()
+                }
                 .onFailure { error ->
                     status.text = getString(
                         R.string.status_test_failed,

@@ -26,8 +26,8 @@ android {
         applicationId = "com.hainesy.karoogarage"
         minSdk = 23
         targetSdk = 34
-        versionCode = 4
-        versionName = "0.2.0"
+        versionCode = 5
+        versionName = "1.0.0"
     }
 
     if (canSignRelease) {

@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!--
+      Themed-icon (monochrome) layer: the garage silhouette alone — the
+      two-glyph foreground turns to mush when tinted at notification size.
+      MDI garage-open-variant by Pictogrammers, Apache 2.0.
+    -->
+    <group
+        android:translateX="21"
+        android:translateY="21"
+        android:scaleX="2.75"
+        android:scaleY="2.75">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M22 9V20H20V11H4V20H2V9L12 5L22 9M19 12H5V14H19V12Z" />
+    </group>
+</vector>

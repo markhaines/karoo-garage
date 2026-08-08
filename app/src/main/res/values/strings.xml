@@ -59,8 +59,12 @@
     <string name="status_logged_in">Signed in. Now choose the entity to control.</string>
     <string name="status_logged_out">Logged out.</string>
     <string name="status_testing">Testing…</string>
-    <string name="status_test_ok">Test succeeded — you\'re all set. The Open Garage action is ready in your rides; press Done to exit.</string>
+    <string name="status_test_ok">Test succeeded.</string>
     <string name="button_done">Done</string>
+    <string name="dialog_last_step_title">Works! One last step</string>
+    <string name="dialog_last_step_message">Now assign the ride button:\n\nKaroo Settings → Controllers → pick \"Open Garage\".\n\nRides don\'t need this app open.</string>
+    <string name="dialog_last_step_done">Done</string>
+    <string name="dialog_last_step_stay">Stay</string>
     <string name="status_test_failed">Test failed: %1$s</string>
     <string name="status_pick_entity_first">Choose an entity first.</string>
 
