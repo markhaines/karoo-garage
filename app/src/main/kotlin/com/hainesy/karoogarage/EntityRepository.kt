@@ -32,8 +32,38 @@ class EntityRepository(private val http: KarooHttp) {
         baseUrl: String,
         accessToken: String,
     ): Result<List<PickableEntity>> {
+        // One request per domain, sliced: a large install's full list blows
+        // the bridge's 100KB response cap (seen in the wild as
+        // RESPONSE_TOO_LARGE), but CHUNK entities of one domain never do.
+        val all = mutableListOf<PickableEntity>()
+        for (domain in PICKABLE_DOMAINS) {
+            var offset = 0
+            while (true) {
+                val slice = fetchSlice(baseUrl, accessToken, domain, offset)
+                    .getOrElse { return Result.failure(it) }
+                all += slice
+                if (slice.size < CHUNK) break
+                offset += CHUNK
+            }
+        }
+        return Result.success(
+            all.sortedWith(
+                compareBy(
+                    { DOMAIN_ORDER.indexOf(it.domain).let { i -> if (i < 0) DOMAIN_ORDER.size else i } },
+                    { it.friendlyName.lowercase() },
+                ),
+            ),
+        )
+    }
+
+    private suspend fun fetchSlice(
+        baseUrl: String,
+        accessToken: String,
+        domain: String,
+        offset: Int,
+    ): Result<List<PickableEntity>> {
         val body = buildJsonObject {
-            put("template", TEMPLATE)
+            put("template", sliceTemplate(domain, offset))
         }
         return http.postJson(
             url = "$baseUrl/api/template",
@@ -51,12 +81,7 @@ class EntityRepository(private val http: KarooHttp) {
                     entityId = pair[0].jsonPrimitive.content,
                     friendlyName = pair[1].jsonPrimitive.content,
                 )
-            }.sortedWith(
-                compareBy(
-                    { DOMAIN_ORDER.indexOf(it.domain).let { i -> if (i < 0) DOMAIN_ORDER.size else i } },
-                    { it.friendlyName.lowercase() },
-                ),
-            )
+            }
         }
     }
 
@@ -111,12 +136,13 @@ class EntityRepository(private val http: KarooHttp) {
         fun servicesFor(domain: String): List<String> =
             SERVICES_BY_DOMAIN[domain] ?: listOf("toggle")
 
-        private val TEMPLATE = """
+        /** ~60 bytes per row keeps a full slice around 20KB, well under 100KB. */
+        private const val CHUNK = 350
+
+        private fun sliceTemplate(domain: String, offset: Int): String = """
             {%- set ns = namespace(items=[]) -%}
-            {%- for s in states -%}
-            {%- if s.domain in ${PICKABLE_DOMAINS.joinToString(",", "[", "]") { "'$it'" }} -%}
+            {%- for s in (states | selectattr('domain', 'eq', '$domain') | list)[$offset:${offset + CHUNK}] -%}
             {%- set ns.items = ns.items + [[s.entity_id, s.name]] -%}
-            {%- endif -%}
             {%- endfor -%}
             {{ ns.items | tojson }}
         """.trimIndent()
