@@ -132,6 +132,7 @@ class SettingsActivity : AppCompatActivity() {
             pickEntity.launch(Intent(this, EntityPickerActivity::class.java))
         }
         findViewById<MaterialButton>(R.id.button_test).setOnClickListener { onTestOauth() }
+        findViewById<MaterialButton>(R.id.button_done).setOnClickListener { finish() }
         findViewById<MaterialButton>(R.id.button_logout).setOnClickListener { onLogout() }
         findViewById<MaterialButton>(R.id.button_show_legacy).setOnClickListener {
             showSection(sectionLegacy)
