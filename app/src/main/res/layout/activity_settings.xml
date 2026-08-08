@@ -43,9 +43,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:visibility="gone"
-                android:padding="8dp"
+                android:layout_marginTop="8dp"
+                android:padding="12dp"
+                android:background="@drawable/bg_discovered"
                 android:textAppearance="?attr/textAppearanceBodyMedium"
-                android:textColor="?attr/colorPrimary" />
+                android:textStyle="bold"
+                android:textColor="@color/discovered_text" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button_login"

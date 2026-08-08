@@ -40,6 +40,11 @@
 
     <string name="label_service">Action to call</string>
     <string name="text_discovered_instance">Found %1$s at %2$s — tap to use</string>
+    <string name="dialog_external_url_title">Use the public address?</string>
+    <string name="dialog_external_url_message">This Home Assistant also advertises\n\n%1$s\n\nThe address you logged in with (%2$s) only works on your home WiFi. The public address works anywhere your phone has signal, so the garage opens mid-ride too. Your login carries over either way.</string>
+    <string name="dialog_external_url_accept">Use public address</string>
+    <string name="dialog_external_url_keep">Keep local address</string>
+    <string name="status_switched_url">Now using %1$s.</string>
     <string name="text_logged_in_as">Logged in as %1$s on %2$s</string>
     <string name="text_no_entity">No entity chosen yet</string>
     <string name="login_intro">Signing in to %1$s</string>

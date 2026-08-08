@@ -106,8 +106,12 @@ To put it on your Karoo:
 
 1. Launch the **Garage** app from the Karoo's app drawer.
 2. Enter your Home Assistant URL. If the Karoo is on the same WiFi as HA, the
-   app usually discovers it via mDNS — a "Found Home Assistant at …" line
+   app usually discovers it via mDNS — a green "Found … tap to use" box
    appears; tap it instead of typing.
+   After a login through a local address, the app checks whether your HA
+   advertises a public URL (HA → Settings → System → Network) and offers to
+   switch to it — recommended, because the local address only works on home
+   WiFi while the public one also works mid-ride via the Companion app.
 3. Tap **Log in** and enter your normal HA username and password (plus your
    MFA code if you use one). This is HA's own login flow: the app never sees
    more privilege than your account has, and the session shows up in your HA

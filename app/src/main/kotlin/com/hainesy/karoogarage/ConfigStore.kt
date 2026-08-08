@@ -128,6 +128,15 @@ class ConfigStore(context: Context) {
             .apply()
     }
 
+    /**
+     * Points the session at a different URL for the SAME instance (e.g. the
+     * advertised public address after a LAN login). Refresh tokens aren't
+     * host-bound, so the login carries over.
+     */
+    fun saveBaseUrl(baseUrl: String) {
+        prefs.edit().putString(KEY_BASE_URL, baseUrl).apply()
+    }
+
     /** Updates the cached short-lived access token after a refresh. */
     fun saveAccessToken(accessToken: String, expiresAtMillis: Long) {
         prefs.edit()

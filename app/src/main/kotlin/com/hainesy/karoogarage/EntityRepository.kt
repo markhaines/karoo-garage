@@ -1,8 +1,10 @@
 package com.hainesy.karoogarage
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.io.IOException
@@ -55,6 +57,31 @@ class EntityRepository(private val http: KarooHttp) {
                     { it.friendlyName.lowercase() },
                 ),
             )
+        }
+    }
+
+    /**
+     * Returns the instance's advertised public URL (HA Settings → System →
+     * Network → "Internet" URL), or null when none is configured.
+     */
+    suspend fun fetchExternalUrl(
+        baseUrl: String,
+        accessToken: String,
+    ): Result<String?> = http.request(
+        method = "GET",
+        url = "$baseUrl/api/config",
+        headers = mapOf("Authorization" to "Bearer $accessToken"),
+        waitForConnection = false,
+    ).mapCatching { response ->
+        if (!response.isSuccess) {
+            throw HttpStatusException(response.statusCode)
+        }
+        val external = json.parseToJsonElement(response.bodyText())
+            .jsonObject["external_url"]
+        when {
+            external == null || external is JsonNull -> null
+            else -> external.jsonPrimitive.content.trim().trimEnd('/')
+                .takeIf { it.startsWith("http://") || it.startsWith("https://") }
         }
     }
 

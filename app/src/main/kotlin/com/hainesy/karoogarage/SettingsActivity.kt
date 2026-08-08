@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import io.hammerhead.karooext.KarooSystemService
@@ -26,6 +27,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var http: KarooHttp
     private lateinit var authClient: AuthClient
     private lateinit var haClient: HomeAssistantClient
+    private lateinit var entityRepository: EntityRepository
     private lateinit var discovery: HaDiscovery
 
     private lateinit var sectionServer: LinearLayout
@@ -80,6 +82,7 @@ class SettingsActivity : AppCompatActivity() {
         http = KarooHttp(karooSystem)
         authClient = AuthClient(http)
         haClient = HomeAssistantClient(http, authClient, configStore)
+        entityRepository = EntityRepository(http)
         discovery = HaDiscovery(this)
 
         bindViews()
@@ -336,18 +339,46 @@ class SettingsActivity : AppCompatActivity() {
                         editPassword.setText("")
                         status.text = getString(R.string.status_logged_in)
                         render()
-                        // First login: go straight to the picker.
-                        if (configStore.load()?.entityId.isNullOrBlank()) {
-                            pickEntity.launch(
-                                Intent(this@SettingsActivity, EntityPickerActivity::class.java),
-                            )
-                        }
+                        maybeSuggestExternalUrl(baseUrl, tokens.accessToken)
                     }
                     .onFailure { error ->
                         status.text = getString(R.string.status_login_failed, error.message)
                         showSection(sectionServer)
                     }
             }
+        }
+    }
+
+    /**
+     * A login through a LAN address (typical after tapping the discovered
+     * instance) only works at home. If the instance advertises a public URL,
+     * default to switching over — the session isn't host-bound, so it's a
+     * one-tap change with no re-login.
+     */
+    private suspend fun maybeSuggestExternalUrl(baseUrl: String, accessToken: String) {
+        val external = entityRepository.fetchExternalUrl(baseUrl, accessToken).getOrNull()
+        if (external == null || external == baseUrl || isFinishing) {
+            proceedAfterLogin()
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.dialog_external_url_title)
+            .setMessage(getString(R.string.dialog_external_url_message, external, baseUrl))
+            .setPositiveButton(R.string.dialog_external_url_accept) { _, _ ->
+                configStore.saveBaseUrl(external)
+                status.text = getString(R.string.status_switched_url, external)
+                render()
+            }
+            .setNegativeButton(R.string.dialog_external_url_keep, null)
+            .setOnDismissListener { proceedAfterLogin() }
+            .show()
+    }
+
+    /** First login: go straight to the picker so setup finishes in one flow. */
+    private fun proceedAfterLogin() {
+        if (isFinishing) return
+        if (configStore.load()?.entityId.isNullOrBlank()) {
+            pickEntity.launch(Intent(this, EntityPickerActivity::class.java))
         }
     }
 

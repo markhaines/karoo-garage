@@ -3,5 +3,8 @@
     <color name="alert_bg_success">#1B5E20</color>
     <color name="alert_bg_error">#B71C1C</color>
     <color name="alert_text">#FFFFFF</color>
+    <color name="discovered_box_bg">#17381B</color>
+    <color name="discovered_box_stroke">#66BB6A</color>
+    <color name="discovered_text">#A5D6A7</color>
     <color name="ic_launcher_background">#1B5E20</color>
 </resources>
