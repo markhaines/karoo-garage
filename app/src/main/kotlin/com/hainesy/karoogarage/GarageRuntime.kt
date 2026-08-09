@@ -87,8 +87,29 @@ object GarageRuntime {
 
     // ---- Trigger (BonusAction + field tap) ----
 
+    @Volatile
+    private var lastTriggerAt = 0L
+
     fun trigger(context: Context) {
         val c = components(context)
+
+        // BLE-tunnelled commands can take 20s+ to arrive; a retry meanwhile
+        // becomes a second toggle that reverses the first (seen in the wild:
+        // door opened, then re-closed by the impatient second press).
+        synchronized(this) {
+            val now = System.currentTimeMillis()
+            if (now - lastTriggerAt < DEBOUNCE_MS) {
+                dispatchAlert(
+                    c,
+                    title = c.appContext.getString(R.string.alert_debounced_title),
+                    detail = c.appContext.getString(R.string.alert_debounced_detail),
+                    isError = false,
+                )
+                return
+            }
+            lastTriggerAt = now
+        }
+
         val state = c.configStore.load()
         if (state == null || !state.isValid()) {
             dispatchAlert(
@@ -113,10 +134,12 @@ object GarageRuntime {
             c.haClient.trigger()
                 .onFailure { error ->
                     Log.w(TAG, "HA call failed", error)
-                    val detail = if (error is ReauthRequiredException) {
-                        c.appContext.getString(R.string.alert_reauth_detail)
-                    } else {
-                        error.message
+                    val detail = when {
+                        error is ReauthRequiredException ->
+                            c.appContext.getString(R.string.alert_reauth_detail)
+                        error.message?.contains("timed out") == true ->
+                            c.appContext.getString(R.string.alert_timeout_detail)
+                        else -> error.message
                             ?: c.appContext.getString(R.string.alert_failed_detail_fallback)
                     }
                     dispatchAlert(
@@ -268,4 +291,7 @@ object GarageRuntime {
     /** Small GET every 20s while a field is on-screen — kind to the BLE bridge. */
     private const val POLL_INTERVAL_MS = 20_000L
     private const val ALERT_RETRY_WINDOW_MS = 5_000L
+
+    /** Ignore re-presses while a command may still be in transit. */
+    private const val DEBOUNCE_MS = 20_000L
 }

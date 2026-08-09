@@ -10,6 +10,9 @@
     <string name="alert_not_configured_title">Garage not set up</string>
     <string name="alert_not_configured_detail">Open the Garage app to connect it to Home Assistant.</string>
     <string name="alert_reauth_detail">Login expired — open the Garage app and log in again.</string>
+    <string name="alert_timeout_detail">No reply yet — the command may still arrive. Watch the Garage field; don\'t press again.</string>
+    <string name="alert_debounced_title">Already sent</string>
+    <string name="alert_debounced_detail">Command still in transit — pressing again would toggle the door back. Watch the Garage field.</string>
 
     <string name="datatype_garage_name">Garage</string>
     <string name="datatype_garage_description">Live garage state — tap the field to fire the configured action. No AXS controller needed.</string>

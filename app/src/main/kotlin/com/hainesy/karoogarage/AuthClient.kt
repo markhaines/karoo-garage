@@ -182,6 +182,7 @@ class AuthClient(private val http: KarooHttp) {
                 "refresh_token" to refreshToken,
                 "client_id" to CLIENT_ID,
             ),
+            timeoutMs = HomeAssistantClient.RIDE_TIMEOUT_MS,
         ).mapCatching(::parseTokenResponse)
 
     /** Revokes the refresh token (logout). HA returns 200 regardless. */

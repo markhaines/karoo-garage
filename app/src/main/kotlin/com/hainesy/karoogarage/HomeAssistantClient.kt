@@ -84,6 +84,7 @@ class HomeAssistantClient(
             url = "${state.baseUrl}/api/services/${state.domain}/${state.service}",
             json = """{"entity_id":"${state.entityId.jsonEscape()}"}""",
             headers = mapOf("Authorization" to "Bearer $bearerToken"),
+            timeoutMs = RIDE_TIMEOUT_MS,
         ).mapCatching { response ->
             if (!response.isSuccess) {
                 throw HttpStatusException(response.statusCode)
@@ -96,5 +97,12 @@ class HomeAssistantClient(
     companion object {
         /** Refresh when the cached access token has under a minute left. */
         private const val EXPIRY_MARGIN_MS = 60_000L
+
+        /**
+         * BLE-tunnelled round trips have been observed taking 20s+ in the
+         * wild; the default 15s timeout declared failure on commands that
+         * were still in transit (and then arrived).
+         */
+        const val RIDE_TIMEOUT_MS = 30_000L
     }
 }

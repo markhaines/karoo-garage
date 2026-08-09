@@ -53,9 +53,15 @@ Assistant from your bike you need one of:
   extensions like this one) can route HTTP requests through, end-to-end. This
   is the path that works mid-ride, anywhere your phone has signal.
 
-Latency over the BLE-tunnelled path is ~1–2 seconds per request (vs ~50ms
-direct over WiFi). For a one-shot garage-open call that's fine; the in-ride
-alert just appears with a small delay.
+Latency over the BLE-tunnelled path is ~1–2 seconds per request in good
+conditions, and has been observed exceeding 20 seconds in the wild (vs ~50ms
+direct over WiFi). The app allows 30 seconds before declaring a timeout, and
+a timeout doesn't necessarily mean failure — the command can still be in
+transit and land afterwards. That's also why the app ignores re-presses for
+20 seconds: with `toggle`, a queued duplicate arriving late reverses the
+door the first press just opened. If you only ever trigger this arriving
+home, consider setting the service to `open_cover` instead of `toggle` —
+it's idempotent, so a duplicate can never close the door on you.
 
 If you see "no route to host" when testing remotely, the Karoo has no
 internet path at all — check that the Companion app is open on your phone
