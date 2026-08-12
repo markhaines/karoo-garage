@@ -6,7 +6,7 @@
 Open your garage door from your handlebars. karoo-garage is a
 [Hammerhead Karoo 3](https://www.hammerhead.io/) extension that fires a
 [Home Assistant](https://www.home-assistant.io/) service call from the in-ride menu: roll up
-the driveway, hit the assigned bonus button combo or on-screen buttpn, and the door opens :-)
+the driveway, hit the assigned bonus button combo or on-screen button, and the door opens :-)
 
 It works with any HA entity that accepts a service call — covers, switches, buttons, scripts,
 scenes, automations — so the garage door is just the obvious use.
