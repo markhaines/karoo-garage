@@ -98,7 +98,8 @@ Notes:
 - Prefer least privilege? Create a dedicated non-admin HA user (e.g.
   `karoo`) and log the Karoo in as that.
 
-### The old ways — long-lived token
+<details>
+<summary>The old ways — long-lived token instead of logging in</summary>
 
 Two file-based routes remain for people who prefer a dedicated token (or
 run an HA old enough not to have the login-flow API). Both feed the form
@@ -109,7 +110,7 @@ You'll need a **long-lived access token** (Home Assistant → your user →
 **Security** → **Long-lived access tokens**) and the **entity ID** of what you
 want to control (Developer Tools → States, e.g. `cover.garage_door`).
 
-### Option A — drop a config file
+**Option A — drop a config file**
 
 1. Copy [`garage.kgcfg.example`](./garage.kgcfg.example) and fill in your real
    values. Save it as `garage.kgcfg`:
@@ -138,7 +139,7 @@ permission error under scoped storage, because the app has no storage
 permission. If you have adb, use `push-config.sh` instead (Option B) — it
 targets a path the app can always read.
 
-### Option B — `tools/push-config.sh` (the adb route)
+**Option B — `tools/push-config.sh` (the adb route)**
 
 For people building from source who already have `adb`:
 
@@ -153,6 +154,7 @@ any storage permission, triggers the import activity, and then deletes the
 file from the device (it contains your token in plaintext). Pass `--debug`
 (or a full package name) as the second argument if you installed the debug
 build instead of the release one.
+</details>
 
 ## The in-ride data field — state display + tap to trigger
 
