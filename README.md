@@ -1,100 +1,58 @@
 # karoo-garage
 
-A [Hammerhead Karoo 3](https://www.hammerhead.io/) extension that opens (or
-toggles, or whatever you wire it to) a [Home Assistant](https://www.home-assistant.io/)
-entity from the in-ride menu. Tap the **Open Garage** action on your Karoo and
-it fires a single REST call at your Home Assistant.
+<!-- Screenshot slot: docs/ device shots — the login/entity-picker screen and the Garage
+     data field mid-ride. Grab over adb next time the Karoo is plugged in. -->
 
-The original use case: roll up the driveway, tap the assigned button combo, garage door opens, no
-hands off the bars.
+Open your garage door from your handlebars. karoo-garage is a
+[Hammerhead Karoo 3](https://www.hammerhead.io/) extension that fires a
+[Home Assistant](https://www.home-assistant.io/) service call from the in-ride menu: roll up
+the driveway, hit the assigned button combo, door opens, no hands off the bars.
 
-Works with any Home Assistant entity that accepts a service call — covers,
-switches, buttons, scripts, scenes, automations.
+It works with any HA entity that accepts a service call — covers, switches, buttons, scripts,
+scenes, automations — so the garage door is just the obvious use.
 
-**v1.0: log in, don't paste tokens.** Setup is: tap the auto-discovered HA
-URL (or type it), sign in with your normal HA username and password on the
-Karoo, then pick your garage door from a list. The app uses Home Assistant's
-own OAuth flow (the same one the official phone apps use), silently renews
-its access, and offers to switch to your HA's public URL so the button works
-mid-ride. No long-lived token, no 180-character strings, no cable. The old
-token-based setup still works under "Use a long-lived token instead".
+[![Latest release](https://img.shields.io/github/v/release/markhaines/karoo-garage)](https://github.com/markhaines/karoo-garage/releases/latest)
+[![License](https://img.shields.io/github/license/markhaines/karoo-garage)](LICENSE)
 
-WARNING: This extension was 100% vibe coded. I have no idea what I'm doing. If you install it your bike could explode.  I have it running on my Karoo3 and it works perfectly however. My bike is yet to explode.
+[Install](#install) · [Configure](#configure) · [In-ride button](#set-up-the-in-ride-button) · [Service recipes](#service-call-recipes)
 
-## How it works
+> WARNING: This extension was 100% vibe coded. I have no idea what I'm doing. If you install it
+> your bike could explode. I have it running on my Karoo3 and it works perfectly however. My
+> bike is yet to explode.
 
-```
-Karoo in-ride menu
-  └─ Open Garage  (BonusAction)
-      └─ [OAuth mode] refresh the 30-min access token if stale
-      └─ POST {your HA URL}/api/services/{domain}/{service}
-          Authorization: Bearer {access token, or legacy long-lived token}
-          { "entity_id": "{your entity}" }
-      └─ in-ride alert: "Garage" / "Sending command…"
-```
+## Features
 
-If the call fails (network error, bad token, wrong entity), you get a red
-in-ride alert with the error message instead.
-
-The HTTP request goes through the karoo-ext SDK's network bridge
-(`OnHttpResponse` / `MakeHttpRequest`), which means the Karoo system picks
-the best path automatically: direct over WiFi when available, or tunnelled
-over Bluetooth via the Hammerhead Companion app when it isn't.
-
-## Connectivity
-
-The Karoo 3 has WiFi and Bluetooth, but no cellular modem. To reach Home
-Assistant from your bike you need one of:
-
-- **Karoo on WiFi** — works only when you're physically in range of a saved
-  network, typically the last few tens of metres of the ride home.
-- **Hammerhead Companion app paired and running** on a phone with internet.
-  The Companion app provides a Bluetooth bridge that the Karoo (and karoo-ext
-  extensions like this one) can route HTTP requests through, end-to-end. This
-  is the path that works mid-ride, anywhere your phone has signal.
-
-Latency over the BLE-tunnelled path is ~1–2 seconds per request in good
-conditions, and has been observed exceeding 20 seconds in the wild (vs ~50ms
-direct over WiFi). The app allows 30 seconds before declaring a timeout, and
-a timeout doesn't necessarily mean failure — the command can still be in
-transit and land afterwards. That's also why the app ignores re-presses for
-20 seconds: with `toggle`, a queued duplicate arriving late reverses the
-door the first press just opened. If you only ever trigger this arriving
-home, consider setting the service to `open_cover` instead of `toggle` —
-it's idempotent, so a duplicate can never close the door on you.
-
-If you see "no route to host" when testing remotely, the Karoo has no
-internet path at all — check that the Companion app is open on your phone
-and connected to the Karoo, and that your phone has working internet.
-
-## Status
-
-v1.0.0 verified end to end (login, entity picker, public-URL switch, in-ride
-action) on a Karoo 3 running firmware **1.628.2410** (April 2026 release),
-against Home Assistant 2026.8. Built against karoo-ext 1.1.9; should work on
-any Karoo 3 firmware that supports karoo-ext 1.1.x. Issues and PRs welcome.
-
-## Requirements
-
-- **Karoo 3** with Karoo OS supporting karoo-ext extensions (firmware shipped
-  in 2024 or later).
-- A **Home Assistant** install reachable from your Karoo's network. Public
-  HTTPS works (Nabu Casa, Caddy, your own reverse proxy); LAN-only works too
-  if your Karoo always rides home before you trigger the action.
-- Your **Home Assistant username and password** — that's it. The app logs in
-  with HA's own auth flow and shows you a list of controllable entities to
-  pick from, so you don't need to mint tokens or look up entity IDs.
-- Only for the legacy token mode: a **long-lived access token** (Home
-  Assistant → your user → **Security** → **Long-lived access tokens**) and
-  the **entity ID** of what you want to control (Developer Tools → States,
-  e.g. `cover.garage_door`).
+- Log in, don't paste tokens: sign in on the Karoo with your normal HA username and password —
+  it's HA's own OAuth flow, the same one the official phone apps use, and access renews silently
+- Finds your Home Assistant for you (mDNS on the local network), then offers your public URL so
+  the button also works mid-ride
+- Pick your door from a list — no entity IDs to look up, no config files to write
+- Works anywhere your phone has signal, tunnelling over Bluetooth through the Hammerhead
+  Companion app when there's no WiFi
+- A live-state **Garage** data field for your ride screen: shows OPEN/CLOSED, and tapping it
+  fires the action — no hardware button needed
+- Or bind it to hardware: the "Open Garage" action slots into any Karoo controller position
+  (SRAM AXS long-press included)
+- Debounce and timeouts tuned for real-world Bluetooth-tunnel latency, so a laggy tap can't
+  double-toggle the door behind you
+- Legacy long-lived-token setup still available if you prefer it
 
 ## Install
 
-Pick a signed APK from the [Releases](https://github.com/markhaines/karoo-garage/releases)
-page, or build from source (see below).
+**Requirements:** a Karoo 3 (2024-or-later firmware), a Home Assistant install reachable over
+HTTPS (Nabu Casa or your own reverse proxy; LAN-only works if you only ever trigger it near
+home), and your HA username + password.
 
-To put it on your Karoo:
+No computer needed — install straight from your phone (Karoo firmware 1.527+):
+
+1. On your phone, open the [latest release](https://github.com/markhaines/karoo-garage/releases/latest)
+   and long-press the `.apk` file.
+2. Share the link with the **Hammerhead Companion** app — it pushes the extension to your Karoo.
+3. Reboot the Karoo once, then launch **Garage** from the app drawer and follow
+   [Configure](#configure) below.
+
+<details>
+<summary>Other ways to install (adb / file manager)</summary>
 
 1. On the Karoo, go to **Settings → About → Software** and tap the version
    number 7+ times to reveal **Developer options**.
@@ -102,9 +60,10 @@ To put it on your Karoo:
    **Android debug bridge** (USB debugging).
 3. Plug the Karoo into your computer with USB-C.
 4. Either:
-   - **adb route**: `adb install -r karoo-garage-1.0.0.apk`, or
+   - **adb route**: `adb install -r karoo-garage-1.1.1.apk`, or
    - **drag-and-drop route**: copy the APK to the Karoo's storage in any
      folder, open the file from the Karoo's file manager, tap **Install**.
+</details>
 
 ## Configure
 
@@ -145,6 +104,10 @@ Two file-based routes remain for people who prefer a dedicated token (or
 run an HA old enough not to have the login-flow API). Both feed the form
 behind **"Use a long-lived token instead"** on the app's first screen —
 nobody should be typing a 180-character token on a touchscreen by hand.
+
+You'll need a **long-lived access token** (Home Assistant → your user →
+**Security** → **Long-lived access tokens**) and the **entity ID** of what you
+want to control (Developer Tools → States, e.g. `cover.garage_door`).
 
 ### Option A — drop a config file
 
@@ -236,6 +199,59 @@ Now during a ride, hitting that control fires the configured service call.
 
 Default is `cover.toggle` because, for a garage door, you usually want a
 single button to open or close depending on state.
+
+## How it works
+
+```
+Karoo in-ride menu
+  └─ Open Garage  (BonusAction)
+      └─ [OAuth mode] refresh the 30-min access token if stale
+      └─ POST {your HA URL}/api/services/{domain}/{service}
+          Authorization: Bearer {access token, or legacy long-lived token}
+          { "entity_id": "{your entity}" }
+      └─ in-ride alert: "Garage" / "Sending command…"
+```
+
+If the call fails (network error, bad token, wrong entity), you get a red
+in-ride alert with the error message instead.
+
+The HTTP request goes through the karoo-ext SDK's network bridge
+(`OnHttpResponse` / `MakeHttpRequest`), which means the Karoo system picks
+the best path automatically: direct over WiFi when available, or tunnelled
+over Bluetooth via the Hammerhead Companion app when it isn't.
+
+## Connectivity
+
+The Karoo 3 has WiFi and Bluetooth, but no cellular modem. To reach Home
+Assistant from your bike you need one of:
+
+- **Karoo on WiFi** — works only when you're physically in range of a saved
+  network, typically the last few tens of metres of the ride home.
+- **Hammerhead Companion app paired and running** on a phone with internet.
+  The Companion app provides a Bluetooth bridge that the Karoo (and karoo-ext
+  extensions like this one) can route HTTP requests through, end-to-end. This
+  is the path that works mid-ride, anywhere your phone has signal.
+
+Latency over the BLE-tunnelled path is ~1–2 seconds per request in good
+conditions, and has been observed exceeding 20 seconds in the wild (vs ~50ms
+direct over WiFi). The app allows 30 seconds before declaring a timeout, and
+a timeout doesn't necessarily mean failure — the command can still be in
+transit and land afterwards. That's also why the app ignores re-presses for
+20 seconds: with `toggle`, a queued duplicate arriving late reverses the
+door the first press just opened. If you only ever trigger this arriving
+home, consider setting the service to `open_cover` instead of `toggle` —
+it's idempotent, so a duplicate can never close the door on you.
+
+If you see "no route to host" when testing remotely, the Karoo has no
+internet path at all — check that the Companion app is open on your phone
+and connected to the Karoo, and that your phone has working internet.
+
+## Status
+
+v1.0.0 verified end to end (login, entity picker, public-URL switch, in-ride
+action) on a Karoo 3 running firmware **1.628.2410** (April 2026 release),
+against Home Assistant 2026.8. Built against karoo-ext 1.1.9; should work on
+any Karoo 3 firmware that supports karoo-ext 1.1.x. Issues and PRs welcome.
 
 ## Building from source
 
