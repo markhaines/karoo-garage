@@ -13,9 +13,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import io.hammerhead.karooext.KarooSystemService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,6 +36,10 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var sectionLogin: LinearLayout
     private lateinit var sectionReady: LinearLayout
     private lateinit var sectionLegacy: LinearLayout
+    private lateinit var sectionBatteries: LinearLayout
+    private lateinit var switchBatteryReport: SwitchMaterial
+    private lateinit var editWebhookId: TextInputEditText
+    private lateinit var textBatteryStatus: TextView
 
     private lateinit var editBaseUrl: TextInputEditText
     private lateinit var textDiscovered: TextView
@@ -87,6 +93,7 @@ class SettingsActivity : AppCompatActivity() {
 
         bindViews()
         wireButtons()
+        loadBatterySettings()
         render()
     }
 
@@ -101,6 +108,10 @@ class SettingsActivity : AppCompatActivity() {
         sectionLogin = findViewById(R.id.section_login)
         sectionReady = findViewById(R.id.section_ready)
         sectionLegacy = findViewById(R.id.section_legacy)
+        sectionBatteries = findViewById(R.id.section_batteries)
+        switchBatteryReport = findViewById(R.id.switch_battery_report)
+        editWebhookId = findViewById(R.id.edit_webhook_id)
+        textBatteryStatus = findViewById(R.id.text_battery_status)
 
         editBaseUrl = findViewById(R.id.edit_base_url)
         textDiscovered = findViewById(R.id.text_discovered)
@@ -133,6 +144,10 @@ class SettingsActivity : AppCompatActivity() {
         }
         findViewById<MaterialButton>(R.id.button_test).setOnClickListener { onTestOauth() }
         findViewById<MaterialButton>(R.id.button_done).setOnClickListener { finish() }
+        findViewById<MaterialButton>(R.id.button_battery_send).setOnClickListener { onBatterySend("report") }
+        findViewById<MaterialButton>(R.id.button_battery_dump).setOnClickListener { onBatterySend("dump") }
+        switchBatteryReport.setOnCheckedChangeListener { _, _ -> saveBatterySettings() }
+        editWebhookId.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) saveBatterySettings() }
         findViewById<MaterialButton>(R.id.button_logout).setOnClickListener { onLogout() }
         findViewById<MaterialButton>(R.id.button_show_legacy).setOnClickListener {
             showSection(sectionLegacy)
@@ -215,10 +230,58 @@ class SettingsActivity : AppCompatActivity() {
         editService.setText(state.service)
     }
 
+    // ---- Battery reporting ----
+
+    private fun loadBatterySettings() {
+        val s = configStore.loadBatteryReport()
+        switchBatteryReport.isChecked = s.enabled
+        editWebhookId.setText(s.webhookId)
+        renderBatteryStatus(s.lastSentAt)
+    }
+
+    private fun saveBatterySettings() {
+        configStore.saveBatteryReport(
+            enabled = switchBatteryReport.isChecked,
+            webhookId = editWebhookId.text?.toString().orEmpty(),
+        )
+    }
+
+    private fun renderBatteryStatus(lastSentAt: Long) {
+        textBatteryStatus.text = if (lastSentAt == 0L) {
+            getString(R.string.text_battery_never)
+        } else {
+            getString(
+                R.string.text_battery_last_sent,
+                java.text.DateFormat.getDateTimeInstance(
+                    java.text.DateFormat.SHORT, java.text.DateFormat.SHORT,
+                ).format(java.util.Date(lastSentAt)),
+            )
+        }
+    }
+
+    private fun onBatterySend(kind: String) {
+        saveBatterySettings()
+        status.text = getString(R.string.status_battery_sending)
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.Default) {
+                GarageRuntime.sendBatteryReportNow(this@SettingsActivity, kind)
+            }
+            result
+                .onSuccess {
+                    status.text = getString(R.string.status_battery_sent)
+                    renderBatteryStatus(configStore.loadBatteryReport().lastSentAt)
+                }
+                .onFailure { error ->
+                    status.text = getString(R.string.status_battery_failed, error.message)
+                }
+        }
+    }
+
     private fun showSection(section: LinearLayout) {
         listOf(sectionServer, sectionLogin, sectionReady, sectionLegacy).forEach {
             it.visibility = if (it == section) View.VISIBLE else View.GONE
         }
+        sectionBatteries.visibility = if (section == sectionReady) View.VISIBLE else View.GONE
         if (section == sectionServer) startDiscovery() else discovery.stop()
     }
 

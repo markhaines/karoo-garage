@@ -198,6 +198,75 @@
         </LinearLayout>
 
         <!-- ============ Legacy section: long-lived token ============ -->
+        <!-- Battery reporting to Home Assistant: shown alongside the ready section
+             once logged in. See BatteryReporter.kt. -->
+        <LinearLayout
+            android:id="@+id/section_batteries"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/label_batteries"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:paddingBottom="4dp" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switch_battery_report"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/switch_battery_report" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="@string/hint_webhook_id"
+                app:helperText="@string/helper_webhook_id">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_webhook_id"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textNoSuggestions"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/button_battery_send"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="@string/button_battery_send" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/button_battery_dump"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="@string/button_battery_dump" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/text_battery_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:paddingTop="4dp" />
+        </LinearLayout>
+
         <LinearLayout
             android:id="@+id/section_legacy"
             android:layout_width="match_parent"

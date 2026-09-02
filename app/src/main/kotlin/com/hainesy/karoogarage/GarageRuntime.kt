@@ -56,6 +56,8 @@ object GarageRuntime {
         val haClient = HomeAssistantClient(http, authClient, configStore)
         val repository = EntityRepository(http)
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        // Declared last: it needs scope and the clients above to already exist.
+        val batteryReporter = BatteryReporter(appContext, karooSystem, http, configStore, scope)
     }
 
     @Volatile
@@ -71,7 +73,7 @@ object GarageRuntime {
      * KarooSystemService (dispatch() silently drops effects until bound).
      */
     fun warm(context: Context) {
-        components(context)
+        components(context).batteryReporter.start()
     }
 
     /**
@@ -83,7 +85,12 @@ object GarageRuntime {
         activeViews = 0
         pollJob?.cancel()
         pollJob = null
+        components?.batteryReporter?.stop()
     }
+
+    /** Settings buttons: "Send now" (kind=report) and "Dump devices" (kind=dump). */
+    suspend fun sendBatteryReportNow(context: Context, kind: String): Result<Unit> =
+        components(context).batteryReporter.sendNow(kind)
 
     // ---- Trigger (BonusAction + field tap) ----
 

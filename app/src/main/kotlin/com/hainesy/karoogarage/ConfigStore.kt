@@ -7,6 +7,14 @@ import androidx.security.crypto.MasterKey
 
 enum class AuthMode { LEGACY_TOKEN, OAUTH }
 
+/** Battery reporting to a Home Assistant webhook (see [BatteryReporter]). */
+data class BatteryReportSettings(
+    val enabled: Boolean,
+    val webhookId: String,
+    /** Epoch millis of the last successful send, 0 if never. */
+    val lastSentAt: Long,
+)
+
 /**
  * Everything the extension needs at ride time, whichever auth mode is active.
  */
@@ -164,6 +172,23 @@ class ConfigStore(context: Context) {
             .apply()
     }
 
+    fun loadBatteryReport(): BatteryReportSettings = BatteryReportSettings(
+        enabled = prefs.getBoolean(KEY_BATTERY_ENABLED, false),
+        webhookId = prefs.getString(KEY_BATTERY_WEBHOOK_ID, "").orEmpty().trim(),
+        lastSentAt = prefs.getLong(KEY_BATTERY_LAST_SENT_AT, 0L),
+    )
+
+    fun saveBatteryReport(enabled: Boolean, webhookId: String) {
+        prefs.edit()
+            .putBoolean(KEY_BATTERY_ENABLED, enabled)
+            .putString(KEY_BATTERY_WEBHOOK_ID, webhookId.trim())
+            .apply()
+    }
+
+    fun saveBatteryLastSent(epochMillis: Long) {
+        prefs.edit().putLong(KEY_BATTERY_LAST_SENT_AT, epochMillis).apply()
+    }
+
     fun clear() {
         prefs.edit().clear().apply()
     }
@@ -181,6 +206,9 @@ class ConfigStore(context: Context) {
         private const val KEY_ACCESS_TOKEN = "access_token"
         private const val KEY_ACCESS_TOKEN_EXPIRES_AT = "access_token_expires_at"
         private const val KEY_ACCOUNT_NAME = "account_name"
+        private const val KEY_BATTERY_ENABLED = "battery_report_enabled"
+        private const val KEY_BATTERY_WEBHOOK_ID = "battery_webhook_id"
+        private const val KEY_BATTERY_LAST_SENT_AT = "battery_last_sent_at"
         private const val AUTH_MODE_LEGACY = "token"
         private const val AUTH_MODE_OAUTH = "oauth"
     }

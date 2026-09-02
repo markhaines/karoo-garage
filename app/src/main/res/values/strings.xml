@@ -86,4 +86,17 @@
 
     <string name="import_success">Configuration imported.</string>
     <string name="import_failed">Could not import configuration: %1$s</string>
+
+    <!-- Battery reporting -->
+    <string name="label_batteries">Battery reporting</string>
+    <string name="switch_battery_report">Report batteries to Home Assistant</string>
+    <string name="hint_webhook_id">Webhook ID</string>
+    <string name="helper_webhook_id">The webhook_id of the HA automation that receives reports</string>
+    <string name="button_battery_send">Send now</string>
+    <string name="button_battery_dump">Dump devices</string>
+    <string name="text_battery_last_sent">Last sent: %1$s</string>
+    <string name="text_battery_never">Last sent: never</string>
+    <string name="status_battery_sending">Sending…</string>
+    <string name="status_battery_sent">Sent.</string>
+    <string name="status_battery_failed">Send failed: %1$s</string>
 </resources>

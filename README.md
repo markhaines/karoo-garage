@@ -36,6 +36,11 @@ scenes, automations — so the garage door is just the obvious use.
 - Debounce and timeouts tuned for real-world Bluetooth-tunnel latency, so a laggy tap can't
   double-toggle the door behind you
 - Legacy long-lived-token setup still available if you prefer it
+- **Battery reporting (v1.2+).** Posts the Karoo's own battery and the last
+  known battery of every paired sensor (SRAM AXS components, power meters,
+  lights, radar, HRM) to a Home Assistant webhook at ride end, on a 30 minute
+  idle tick, and whenever the paired-device list changes. Built for a garage
+  wall panel that says what needs charging.
 
 ## Install
 
@@ -60,7 +65,7 @@ No computer needed — install straight from your phone (Karoo firmware 1.527+):
    **Android debug bridge** (USB debugging).
 3. Plug the Karoo into your computer with USB-C.
 4. Either:
-   - **adb route**: `adb install -r karoo-garage-1.1.1.apk`, or
+   - **adb route**: `adb install -r karoo-garage-1.2.0.apk`, or
    - **drag-and-drop route**: copy the APK to the Karoo's storage in any
      folder, open the file from the Karoo's file manager, tap **Install**.
 </details>
@@ -202,6 +207,79 @@ Now during a ride, hitting that control fires the configured service call.
 Default is `cover.toggle` because, for a garage door, you usually want a
 single button to open or close depending on state.
 
+## Battery reporting (v1.2+)
+
+The Karoo already knows the battery state of everything it is paired with:
+the ANT+ profiles for SRAM AXS, power meters, lights, radar and heart-rate
+straps all carry a battery status, and karoo-ext exposes it as `SavedDevices`.
+v1.2 turns the Karoo into a data source for the house. It POSTs a JSON report
+to a Home Assistant **webhook**, and an automation on the HA side fans it out
+into whatever helpers or sensors you like.
+
+**Setup**
+
+1. In Home Assistant, create an automation with a webhook trigger. Pick a long
+   random id (32+ characters): the id is the only secret on this path, there is
+   no auth header. Set `local_only: false` if reports should also arrive over the
+   Companion app tunnel from outside your LAN.
+
+   ```yaml
+   triggers:
+     - trigger: webhook
+       webhook_id: karoo_batteries_<random>
+       allowed_methods: [POST]
+       local_only: false
+   actions:
+     - action: input_number.set_value
+       target: {entity_id: input_number.karoo_battery}
+       data: {value: "{{ trigger.json.karoo.battery_pct }}"}
+   ```
+
+2. On the Karoo: **Settings → Garage → Battery reporting**. Paste the webhook
+   id, switch reporting on, tap **Dump devices**. The dump is the same payload
+   with `"kind": "dump"` plus the raw `SavedDevices` tree, so render it as a
+   persistent notification once and read off the ids and serials you want to
+   map. **Send now** posts a normal report.
+
+**When it sends**
+
+- **Ride end** (any state to `Idle`).
+- **Paired devices changed**, which includes the first `SavedDevices` emission
+  after boot, so powering the Karoo on at home is a free report.
+- **Idle tick** every 30 minutes while not riding, skipped below 15% unless
+  charging. It is a coroutine delay, not an alarm, so it never wakes the device.
+- Manual, from the Settings buttons.
+
+Sends are coalesced (60 second floor for automatic reasons) and never queued:
+a failed POST logs one warning and is dropped, the next trigger tries again.
+
+**Payload**
+
+```json
+{
+  "kind": "report", "reason": "ride_end", "ext_version": "1.2.0", "sent_at": 1788342795982,
+  "karoo": { "serial": "…", "battery_pct": 80, "charging": true, "stream_pct": 80.0, "stream_state": "Streaming" },
+  "ride_state": "Idle",
+  "devices": [
+    { "id": "16645-34-5", "name": "RD_01 System", "connection": "ANT_PLUS", "enabled": true,
+      "manufacturer": "SRAM", "serial": null, "battery": "NEW", "battery_at": 1788342334318,
+      "supported": ["TYPE_SHIFTING_BATTERY_ID", "…"],
+      "components": {
+        "LEFT_SHIFTER":  { "battery": "NEW", "battery_at": 1788342334319, "manufacturer": "SRAM", "serial": "1217531072" },
+        "REAR_DERAILLEUR": { "battery": "NEW", "battery_at": 1788342334318, "manufacturer": "SRAM", "serial": "1216531645" }
+      } }
+  ]
+}
+```
+
+`battery` is the Karoo's own coarse bucket: `NEW`, `GOOD`, `OK`, `LOW`,
+`CRITICAL` or `INVALID`. Treat it as coarse: an AXS derailleur pack the BLE
+advert put at 48% still reported `NEW`. `battery_at` is when the Karoo last
+heard that device's battery page, not when the report was sent, so key any
+"freshest wins" logic on it. Device `id` is the stable ANT id and is the safer
+key for devices (a radar with a light channel shows up twice with one serial);
+components carry their SRAM serial.
+
 ## How it works
 
 ```
@@ -250,8 +328,8 @@ and connected to the Karoo, and that your phone has working internet.
 
 ## Status
 
-v1.0.0 verified end to end (login, entity picker, public-URL switch, in-ride
-action) on a Karoo 3 running firmware **1.628.2410** (April 2026 release),
+v1.2.0 verified end to end (login, entity picker, public-URL switch, in-ride
+action, battery reporting: dump, manual send, boot-time report) on a Karoo 3 running firmware **1.628.2410** (April 2026 release),
 against Home Assistant 2026.8. Built against karoo-ext 1.1.9; should work on
 any Karoo 3 firmware that supports karoo-ext 1.1.x. Issues and PRs welcome.
 
