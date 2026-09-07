@@ -1,5 +1,7 @@
 # karoo-garage
 
+Dev tier: 3 (public)
+
 <!-- Screenshot slot: docs/ device shots — the login/entity-picker screen and the Garage
      data field mid-ride. Grab over adb next time the Karoo is plugged in. -->
 
