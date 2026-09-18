@@ -60,3 +60,16 @@ adb logcat -s GarageExtension              # tail extension logs by tag
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 gh auth refresh -s read:packages           # if Gradle Packages auth ever fails
 ```
+
+## Decisions
+
+Architectural decisions live in `docs/adr/`, one numbered file each, indexed at
+[`docs/adr/README.md`](docs/adr/README.md). **Read the index before changing how this repo is
+built.** Several things here that look wrong, or look like they should be replaced with the
+standard off-the-shelf component, are deliberate and recorded there with the reason.
+
+`GLOSSARY.md` covers terms that mean something specific in this repo.
+
+**Merge readiness:** before a branch merges, say what it changed about the ADR library, and
+land those updates in the same change. A decision recorded a week later is a decision nobody
+recorded.
