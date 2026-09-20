@@ -73,3 +73,17 @@ standard off-the-shelf component, are deliberate and recorded there with the rea
 **Merge readiness:** before a branch merges, say what it changed about the ADR library, and
 land those updates in the same change. A decision recorded a week later is a decision nobody
 recorded.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues in this repo, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles, label strings unchanged. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
