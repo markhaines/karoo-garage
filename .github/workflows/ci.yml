@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # karoo-ext is on GitHub Packages, which needs auth even for public packages.
+  packages: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      # The runner image ships an Android SDK with licences accepted. Release builds
+      # stay in release.yml (tag-triggered, signed); this only gates main and PRs.
+      - name: Test, lint, build
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug --no-daemon

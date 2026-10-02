@@ -117,50 +117,6 @@ class AuthClient(private val http: KarooHttp) {
         return Result.success(parseLoginStep(obj))
     }
 
-    /** Returns the MFA module to auto-select, or null if this isn't that step. */
-    private fun mfaModuleToSelect(obj: JsonObject): String? {
-        if (obj["type"]?.jsonPrimitive?.content != "form") return null
-        if (obj["step_id"]?.jsonPrimitive?.content != "select_mfa_module") return null
-        if ((obj["errors"] as? JsonObject)?.isNotEmpty() == true) return null
-        val options = (obj["data_schema"] as? kotlinx.serialization.json.JsonArray)
-            ?.filterIsInstance<JsonObject>()
-            ?.firstOrNull { it["name"]?.jsonPrimitive?.content == "multi_factor_auth_module" }
-            ?.get("options") as? kotlinx.serialization.json.JsonArray
-            ?: return null
-        val ids = options.mapNotNull { option ->
-            (option as? kotlinx.serialization.json.JsonArray)
-                ?.firstOrNull()?.jsonPrimitive?.content
-        }
-        return ids.firstOrNull { it == "totp" } ?: ids.firstOrNull()
-    }
-
-    private fun parseLoginStep(obj: JsonObject): LoginStep {
-        val type = obj["type"]?.jsonPrimitive?.content
-        val flowId = obj["flow_id"]?.jsonPrimitive?.content
-        return when (type) {
-            "create_entry" -> {
-                val code = obj["result"]?.jsonPrimitive?.content
-                if (code != null) LoginStep.Success(code)
-                else LoginStep.Failed(flowId, "login succeeded but no code returned")
-            }
-            "form" -> {
-                val stepId = obj["step_id"]?.jsonPrimitive?.content
-                val errors = obj["errors"] as? JsonObject
-                val baseError = errors?.get("base")?.jsonPrimitive?.content
-                when {
-                    baseError != null -> LoginStep.Failed(flowId, humaniseError(baseError))
-                    stepId == "mfa" && flowId != null -> LoginStep.MfaRequired(flowId)
-                    else -> LoginStep.Failed(flowId, "unexpected login step: $stepId")
-                }
-            }
-            "abort" -> LoginStep.Failed(
-                null,
-                obj["reason"]?.jsonPrimitive?.content ?: "login aborted",
-            )
-            else -> LoginStep.Failed(flowId, "unexpected response type: $type")
-        }
-    }
-
     /** Exchanges the one-time authorization code for tokens. */
     suspend fun exchangeCode(baseUrl: String, code: String): Result<TokenSet> =
         http.postForm(
@@ -216,13 +172,6 @@ class AuthClient(private val http: KarooHttp) {
                 ?: obj["message"]?.jsonPrimitive?.content
         }.getOrNull()
 
-    private fun humaniseError(code: String): String = when (code) {
-        "invalid_auth" -> "wrong username or password"
-        "invalid_code" -> "wrong verification code"
-        "invalid_auth_module" -> "verification method unavailable"
-        else -> code
-    }
-
     private fun kotlinx.serialization.json.JsonObjectBuilder.putHandler() {
         put(
             "handler",
@@ -234,6 +183,59 @@ class AuthClient(private val http: KarooHttp) {
     }
 
     companion object {
+        // Pure HA login-flow parsing: internal so the unit tests can reach it.
+
+        /** Returns the MFA module to auto-select, or null if this isn't that step. */
+        internal fun mfaModuleToSelect(obj: JsonObject): String? {
+            if (obj["type"]?.jsonPrimitive?.content != "form") return null
+            if (obj["step_id"]?.jsonPrimitive?.content != "select_mfa_module") return null
+            if ((obj["errors"] as? JsonObject)?.isNotEmpty() == true) return null
+            val options = (obj["data_schema"] as? kotlinx.serialization.json.JsonArray)
+                ?.filterIsInstance<JsonObject>()
+                ?.firstOrNull { it["name"]?.jsonPrimitive?.content == "multi_factor_auth_module" }
+                ?.get("options") as? kotlinx.serialization.json.JsonArray
+                ?: return null
+            val ids = options.mapNotNull { option ->
+                (option as? kotlinx.serialization.json.JsonArray)
+                    ?.firstOrNull()?.jsonPrimitive?.content
+            }
+            return ids.firstOrNull { it == "totp" } ?: ids.firstOrNull()
+        }
+
+        internal fun parseLoginStep(obj: JsonObject): LoginStep {
+            val type = obj["type"]?.jsonPrimitive?.content
+            val flowId = obj["flow_id"]?.jsonPrimitive?.content
+            return when (type) {
+                "create_entry" -> {
+                    val code = obj["result"]?.jsonPrimitive?.content
+                    if (code != null) LoginStep.Success(code)
+                    else LoginStep.Failed(flowId, "login succeeded but no code returned")
+                }
+                "form" -> {
+                    val stepId = obj["step_id"]?.jsonPrimitive?.content
+                    val errors = obj["errors"] as? JsonObject
+                    val baseError = errors?.get("base")?.jsonPrimitive?.content
+                    when {
+                        baseError != null -> LoginStep.Failed(flowId, humaniseError(baseError))
+                        stepId == "mfa" && flowId != null -> LoginStep.MfaRequired(flowId)
+                        else -> LoginStep.Failed(flowId, "unexpected login step: $stepId")
+                    }
+                }
+                "abort" -> LoginStep.Failed(
+                    null,
+                    obj["reason"]?.jsonPrimitive?.content ?: "login aborted",
+                )
+                else -> LoginStep.Failed(flowId, "unexpected response type: $type")
+            }
+        }
+
+        internal fun humaniseError(code: String): String = when (code) {
+            "invalid_auth" -> "wrong username or password"
+            "invalid_code" -> "wrong verification code"
+            "invalid_auth_module" -> "verification method unavailable"
+            else -> code
+        }
+
         // HA's IndieAuth: client_id is a URL; redirect_uri on the same host is
         // accepted without HA fetching the page, so this works for airgapped
         // installs too. Must stay stable — refresh calls present the same id.
