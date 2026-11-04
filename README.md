@@ -136,8 +136,16 @@ want to control (Developer Tools → States, e.g. `cover.garage_door`).
    copy `garage.kgcfg` into the Karoo's `Download` folder.
 3. On the Karoo, open the file manager, find `garage.kgcfg`, and tap it.
 4. Android offers **Garage** as the handler — pick it.
-5. You'll see "Configuration imported." The file is read once into encrypted
-   storage; the file itself can be deleted.
+5. A dialog shows the server, entity and action the file would set (never the
+   token). Tap **Import** to save it, or **Cancel** to keep your current setup
+   untouched. If the import replaces an OAuth login, the app logs that session
+   out of Home Assistant too (best-effort; check your HA profile if you were
+   offline). The file is read once into encrypted storage; the file itself can
+   be deleted.
+
+   The importer only accepts a `.kgcfg` opened from a file manager (or pushed by
+   `push-config.sh`), refuses anything over 8 KB, and rejects malformed JSON,
+   unknown fields, and URLs with credentials, a query or a fragment.
 
 This works because tapping the file in the Karoo's file manager grants the
 app a `content://` URI for it. Don't try to shortcut it over adb: a file
@@ -158,7 +166,8 @@ For people building from source who already have `adb`:
 This pushes the file to the app's own external-files directory
 (`/sdcard/Android/data/<package>/files/`), which the app can read without
 any storage permission, triggers the import activity, and then deletes the
-file from the device (it contains your token in plaintext). Pass `--debug`
+file from the device (it contains your token in plaintext). Confirm the import
+on the Karoo when the dialog appears. Pass `--debug`
 (or a full package name) as the second argument if you installed the debug
 build instead of the release one.
 </details>
@@ -408,6 +417,7 @@ app/src/main/
 │   ├── HaDiscovery.kt                  # mDNS discovery of HA on the LAN
 │   ├── ConfigStore.kt                  # EncryptedSharedPreferences wrapper
 │   ├── Config.kt                       # legacy .kgcfg import shape
+│   ├── ConfigImport.kt                 # .kgcfg source/size/content checks + confirm
 │   ├── SettingsActivity.kt             # login / entity picker / legacy UI
 │   ├── EntityPickerActivity.kt         # tap-to-choose entity list
 │   └── ImportConfigActivity.kt         # handles .kgcfg file open intent

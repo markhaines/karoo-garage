@@ -86,6 +86,12 @@
 
     <string name="import_success">Configuration imported.</string>
     <string name="import_failed">Could not import configuration: %1$s</string>
+    <string name="import_cancelled">Import cancelled. Nothing changed.</string>
+    <string name="import_confirm_title">Import this configuration?</string>
+    <string name="import_confirm_message">Server: %1$s\nEntity: %2$s\nAction: %3$s\n\nThe garage button will fire this action on this server. Only continue if you made this file.</string>
+    <string name="import_confirm_replaces">This replaces your current setup on %1$s. If you were logged in there, that session is logged out.</string>
+    <string name="import_confirm_accept">Import</string>
+    <string name="import_confirm_cancel">Cancel</string>
 
     <!-- Battery reporting -->
     <string name="label_batteries">Battery reporting</string>

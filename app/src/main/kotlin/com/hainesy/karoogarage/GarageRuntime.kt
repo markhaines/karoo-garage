@@ -92,6 +92,20 @@ object GarageRuntime {
     suspend fun sendBatteryReportNow(context: Context, kind: String): Result<Unit> =
         components(context).batteryReporter.sendNow(kind)
 
+    /**
+     * Best-effort server-side revocation of an OAuth session the app has already dropped
+     * locally (a .kgcfg import replaced it). Runs on the process scope so it outlives the
+     * short-lived import activity. Failures are logged without the token and otherwise
+     * ignored; the session still shows in the HA profile for manual revocation.
+     */
+    fun revokeBestEffort(context: Context, session: ConfigImport.Session) {
+        val c = components(context)
+        c.scope.launch {
+            c.authClient.revoke(session.baseUrl, session.refreshToken)
+                .onFailure { Log.w(TAG, "revoking replaced OAuth session failed: ${it.javaClass.simpleName}") }
+        }
+    }
+
     // ---- Trigger (BonusAction + field tap) ----
 
     @Volatile

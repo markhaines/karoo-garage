@@ -8,3 +8,4 @@
 - **In-ride menu**: The menu reachable while recording a ride, where the extension's action appears.
 - **Companion app**: Hammerhead's phone app. Provides the Bluetooth tunnel to the internet when the Karoo has no WiFi.
 - **Service call**: The Home Assistant action fired. Works for covers, switches, buttons, scripts, scenes and automations, so "garage" is just the obvious case.
+- **Config import**: Opening a `.kgcfg` file (legacy long-lived-token setup) with the Garage app. Untrusted input: bounded, validated, and only saved after the rider confirms the server, entity and action it shows.

@@ -5,7 +5,17 @@ APK through `release.yml`. Reconstructed from tags and history on 2026-10-02.
 
 ## Unreleased
 
+### Security
+- `.kgcfg` import hardened (#6): VIEW only (SEND and BROWSABLE removed), `content://` `.kgcfg`
+  files or `file://` inside the app's own folder only, 8 KB cap, strict parsing, and a
+  confirmation dialog showing server, entity and action (never the token) before anything is
+  saved. Cancel leaves the current setup untouched. An OAuth login replaced by an import is
+  revoked on the server, best-effort. Parse errors are no longer logged with their message,
+  which could quote the token. ADR-0002.
+
 ### Added
+- 20 unit tests over the import checks: oversized and endless streams, malformed and
+  unexpected content, externally supplied intents, and confirm/cancel/revoke behaviour.
 - 13 unit tests over Home Assistant's login flow as the extension parses it: success,
   missing code, the MFA step, humanised errors, an error on the MFA step winning over
   re-asking, abort, unknown types, and MFA module auto-selection (TOTP preferred, never
@@ -20,6 +30,8 @@ APK through `release.yml`. Reconstructed from tags and history on 2026-10-02.
   companion object as `internal`, so the tests can reach them. They used no instance state;
   call sites are unchanged.
 - `GLOSSARY.md` became `CONTEXT.md`, in the domain-modeling skill's format.
+- `AuthMode` and `GarageState` moved from `ConfigStore.kt` to `GarageState.kt` unchanged, so
+  pure logic that uses them compiles without Android.
 
 ## 1.2.0 — 2026-09-02
 
