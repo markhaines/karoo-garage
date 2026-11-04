@@ -82,7 +82,7 @@ class KarooHttp(private val karooSystem: KarooSystemService) {
         return try {
             withTimeout(timeoutMs) { deferred.await() }
         } catch (timeout: TimeoutCancellationException) {
-            Result.failure(IOException("timed out after ${timeoutMs}ms"))
+            Result.failure(RequestTimeoutException("timed out after ${timeoutMs}ms"))
         } finally {
             karooSystem.removeConsumer(consumerId)
         }

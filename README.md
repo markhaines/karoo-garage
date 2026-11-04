@@ -327,11 +327,15 @@ Latency over the BLE-tunnelled path is ~1–2 seconds per request in good
 conditions, and has been observed exceeding 20 seconds in the wild (vs ~50ms
 direct over WiFi). The app allows 30 seconds before declaring a timeout, and
 a timeout doesn't necessarily mean failure — the command can still be in
-transit and land afterwards. That's also why the app ignores re-presses for
-20 seconds: with `toggle`, a queued duplicate arriving late reverses the
-door the first press just opened. If you only ever trigger this arriving
-home, consider setting the service to `open_cover` instead of `toggle` —
-it's idempotent, so a duplicate can never close the door on you.
+transit and land afterwards. That's also why the app sends one command at a
+time: a press while the last one is still waiting for Home Assistant is
+refused ("Still sending"), and so is a press within 20 seconds of it
+finishing, timing out or failing ("Already sent"). With `toggle`, a duplicate
+arriving late reverses the door the first press just opened. The Garage field
+shows SENDING… while a command is out and NO REPLY after a timeout. If you
+only ever trigger this arriving home, set the service to `open_cover` instead
+of `toggle` (the setup screen suggests it) — it's idempotent, so a duplicate
+can never close the door on you.
 
 If you see "no route to host" when testing remotely, the Karoo has no
 internet path at all — check that the Companion app is open on your phone
@@ -418,6 +422,9 @@ app/src/main/
 │   ├── ConfigStore.kt                  # EncryptedSharedPreferences wrapper
 │   ├── Config.kt                       # legacy .kgcfg import shape
 │   ├── ConfigImport.kt                 # .kgcfg source/size/content checks + confirm
+│   ├── GarageRuntime.kt                # process-wide runtime: trigger, poller, teardown
+│   ├── GarageCommand.kt                # one command at a time + cooldown
+│   ├── RuntimeLifecycle.kt             # runtime scope/connection create + teardown
 │   ├── SettingsActivity.kt             # login / entity picker / legacy UI
 │   ├── EntityPickerActivity.kt         # tap-to-choose entity list
 │   └── ImportConfigActivity.kt         # handles .kgcfg file open intent

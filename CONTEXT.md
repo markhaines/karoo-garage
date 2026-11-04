@@ -9,3 +9,4 @@
 - **Companion app**: Hammerhead's phone app. Provides the Bluetooth tunnel to the internet when the Karoo has no WiFi.
 - **Service call**: The Home Assistant action fired. Works for covers, switches, buttons, scripts, scenes and automations, so "garage" is just the obvious case.
 - **Config import**: Opening a `.kgcfg` file (legacy long-lived-token setup) with the Garage app. Untrusted input: bounded, validated, and only saved after the rider confirms the server, entity and action it shows.
+- **Cooldown**: The 20 seconds after a garage command resolves (done, failed, timed out or torn down) during which another press is refused. A press while a command is still unresolved is refused outright. See ADR-0003.
