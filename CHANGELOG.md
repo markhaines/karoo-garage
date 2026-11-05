@@ -21,6 +21,19 @@ APK through `release.yml`. Reconstructed from tags and history on 2026-10-02.
   call sites are unchanged.
 - `GLOSSARY.md` became `CONTEXT.md`, in the domain-modeling skill's format.
 
+### Security
+- Server URLs are parsed structurally and stored as a canonical origin (#9). Userinfo, query,
+  fragment, any path, IPv6 zones and invalid ports are refused. HTTPS is required except for a
+  local address (private or link-local IPv4/IPv6, loopback, `.local`, `.home.arpa`), and the
+  app warns before a password or token goes out over local HTTP. Login, the legacy form,
+  `.kgcfg` import, mDNS discovery and HA's advertised public URL all use the same validator,
+  `ServerUrl`. Discovery prefers HA's HTTPS `internal_url` from its mDNS record when there is
+  one. Underscore hostnames keep working, as in PR #11's importer. 22 unit tests. ADR-0004.
+- **Breaking for remote HTTP setups:** a stored `http://` URL that is not local now stops the
+  garage action with "server URL can only use http:// on your home network" instead of
+  sending the token. That includes a bare name such as `http://homeassistant:8123`, which
+  is not provably local. Switch to HTTPS, or log in again with a local IP or `.local` name.
+
 ## 1.2.0 — 2026-09-02
 
 ### Added

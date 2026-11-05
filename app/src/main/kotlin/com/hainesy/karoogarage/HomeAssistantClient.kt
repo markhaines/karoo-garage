@@ -21,7 +21,11 @@ class HomeAssistantClient(
 
     suspend fun trigger(): Result<Unit> {
         val state = configStore.load()
-        if (state == null || !state.isValid()) {
+            ?: return Result.failure(IOException("not configured"))
+        // A URL stored by an older version may fail today's rules (remote http, a path).
+        // Say so, rather than "not configured", and never send the token to it.
+        ServerUrl.parse(state.baseUrl).onFailure { return Result.failure(IOException(it.message)) }
+        if (!state.isValid()) {
             return Result.failure(IOException("not configured"))
         }
         return when (state.authMode) {
