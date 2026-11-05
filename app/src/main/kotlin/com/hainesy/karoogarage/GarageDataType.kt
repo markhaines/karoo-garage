@@ -126,7 +126,8 @@ private fun GarageTile(
     val mainText = when {
         !state.configured -> context.getString(R.string.field_not_configured)
         state.authExpired -> context.getString(R.string.field_auth_expired)
-        state.sending -> context.getString(R.string.field_sending)
+        state.command == GarageRuntime.CommandPhase.SENDING -> context.getString(R.string.field_sending)
+        state.command == GarageRuntime.CommandPhase.TIMED_OUT -> context.getString(R.string.field_no_reply)
         state.state == null -> "—"
         else -> state.state.uppercase()
     }
@@ -162,7 +163,9 @@ private fun GarageTile(
                 maxLines = 1,
             )
             Text(
-                text = context.getString(R.string.field_tap_hint),
+                text = context.getString(
+                    if (state.command == GarageRuntime.CommandPhase.IDLE) R.string.field_tap_hint else R.string.field_wait_hint,
+                ),
                 style = TextStyle(
                     color = ColorProvider(Color(0x80FFFFFF)),
                     fontSize = 9.sp,

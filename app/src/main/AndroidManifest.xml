@@ -27,16 +27,19 @@
             android:exported="false"
             android:label="@string/picker_title" />
 
+        <!-- Exported so a file manager can open a .kgcfg with it. VIEW only: the code
+             re-checks action, scheme and file type, bounds the read, and asks before
+             replacing anything (ADR-0002). No SEND, no BROWSABLE. -->
         <activity
             android:name=".ImportConfigActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:theme="@style/Theme.KarooGarage.Translucent"
             android:noHistory="true"
             android:excludeFromRecents="true">
             <intent-filter android:label="@string/app_name">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="content" />
                 <data android:scheme="file" />
                 <data android:mimeType="*/*" />
@@ -45,13 +48,6 @@
                 <data android:pathPattern=".*\\..*\\.kgcfg" />
                 <data android:pathPattern=".*\\..*\\..*\\.kgcfg" />
                 <data android:pathPattern=".*\\..*\\..*\\..*\\.kgcfg" />
-            </intent-filter>
-            <intent-filter android:label="@string/app_name">
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="application/json" />
-                <data android:mimeType="text/plain" />
-                <data android:mimeType="application/octet-stream" />
             </intent-filter>
         </activity>
 

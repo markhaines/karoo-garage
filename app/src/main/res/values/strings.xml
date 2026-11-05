@@ -11,8 +11,11 @@
     <string name="alert_not_configured_detail">Open the Garage app to connect it to Home Assistant.</string>
     <string name="alert_reauth_detail">Login expired — open the Garage app and log in again.</string>
     <string name="alert_timeout_detail">No reply yet — the command may still arrive. Watch the Garage field; don\'t press again.</string>
+    <string name="alert_done_detail">Done — Home Assistant took the command.</string>
+    <string name="alert_still_sending_title">Still sending</string>
+    <string name="alert_still_sending_detail">Waiting for Home Assistant to answer. A second press could reverse the door, so it was ignored.</string>
     <string name="alert_debounced_title">Already sent</string>
-    <string name="alert_debounced_detail">Command still in transit — pressing again would toggle the door back. Watch the Garage field.</string>
+    <string name="alert_debounced_detail">The last command only just finished — pressing again would toggle the door back. Watch the Garage field.</string>
 
     <string name="datatype_garage_name">Garage</string>
     <string name="datatype_garage_description">Live garage state — tap the field to fire the configured action. No AXS controller needed.</string>
@@ -20,6 +23,8 @@
     <string name="field_auth_expired">LOG IN</string>
     <string name="field_sending">SENDING…</string>
     <string name="field_tap_hint">tap to toggle</string>
+    <string name="field_no_reply">NO REPLY</string>
+    <string name="field_wait_hint">wait…</string>
 
     <string name="settings_intro_oauth">Connect to Home Assistant by logging in with your normal HA username and password. No long-lived token needed.</string>
     <string name="settings_intro">Configure the Home Assistant connection with a long-lived access token. Tap and hold any field to paste from the Karoo clipboard.</string>
@@ -36,7 +41,7 @@
     <string name="field_domain">Service domain</string>
     <string name="field_domain_helper">e.g. cover, switch, button</string>
     <string name="field_service">Service</string>
-    <string name="field_service_helper">e.g. toggle, open_cover, turn_on, press</string>
+    <string name="field_service_helper">e.g. open_cover (safest), toggle, turn_on, press</string>
 
     <string name="button_login">Log in</string>
     <string name="button_sign_in">Sign in</string>
@@ -49,6 +54,7 @@
     <string name="button_test">Test connection</string>
 
     <string name="label_service">Action to call</string>
+    <string name="hint_idempotent_service">Tip: open_cover (or turn_on) is safest mid-ride. If a slow command arrives twice it just opens again, where toggle would close the door.</string>
     <string name="text_discovered_instance">Found %1$s at %2$s — tap to use</string>
     <string name="dialog_external_url_title">Use the public address?</string>
     <string name="dialog_external_url_message">This Home Assistant also advertises\n\n%1$s\n\nThe address you logged in with (%2$s) only works on your home WiFi. The public address works anywhere your phone has signal, so the garage opens mid-ride too. Your login carries over either way.</string>
@@ -86,6 +92,12 @@
 
     <string name="import_success">Configuration imported.</string>
     <string name="import_failed">Could not import configuration: %1$s</string>
+    <string name="import_cancelled">Import cancelled. Nothing changed.</string>
+    <string name="import_confirm_title">Import this configuration?</string>
+    <string name="import_confirm_message">Server: %1$s\nEntity: %2$s\nAction: %3$s\n\nThe garage button will fire this action on this server. Only continue if you made this file.</string>
+    <string name="import_confirm_replaces">This replaces your current setup on %1$s. If you were logged in there, that session is logged out.</string>
+    <string name="import_confirm_accept">Import</string>
+    <string name="import_confirm_cancel">Cancel</string>
 
     <!-- Battery reporting -->
     <string name="label_batteries">Battery reporting</string>

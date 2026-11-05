@@ -76,4 +76,4 @@ sleep 3
 echo "→ deleting pushed file from device"
 adb shell rm -f "$REMOTE_PATH"
 
-echo "✓ done. Check the Karoo for an 'imported' toast."
+echo "✓ done. Confirm the import on the Karoo: check the server, entity and action it shows."

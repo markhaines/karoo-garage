@@ -3,4 +3,11 @@
     <style name="Theme.KarooGarage" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:statusBarColor">?attr/colorSurface</item>
     </style>
+
+    <!-- The import activity is only a host for its confirmation dialog. -->
+    <style name="Theme.KarooGarage.Translucent">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>

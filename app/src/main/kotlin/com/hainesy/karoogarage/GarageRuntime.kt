@@ -5,9 +5,7 @@ import android.util.Log
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.InRideAlert
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,12 +21,20 @@ import kotlinx.coroutines.launch
  *
  * Threading: everything long-running goes through [Components.scope]
  * (Dispatchers.Default — EncryptedSharedPreferences decryption must stay off
- * the main thread). All [fieldStateFlow] writes use the CAS-based update {}
+ * the main thread). That scope belongs to [lifecycle]: [reset] cancels it,
+ * disconnects the Karoo service and drops the components, and the next use
+ * builds fresh ones (#7). The [commandGate] deliberately outlives a reset: a
+ * command cancelled locally may still be on its way to Home Assistant (#5).
+ *
+ * All [fieldStateFlow] writes use the CAS-based update {}
  * because trigger() runs on binder/Glance threads concurrently with the
  * poller. All state refreshes are serialized through the single [pollJob] so
  * an in-flight slow poll can never clobber a fresher result.
  */
 object GarageRuntime {
+
+    /** Where the last command is, as far as the data field is concerned. */
+    enum class CommandPhase { IDLE, SENDING, TIMED_OUT }
 
     /** What the in-ride data field renders. */
     data class FieldState(
@@ -36,14 +42,14 @@ object GarageRuntime {
         val entityName: String? = null,
         /** Raw HA state ("open", "closed", "opening", …), null = not fetched. */
         val state: String? = null,
-        val sending: Boolean = false,
+        val command: CommandPhase = CommandPhase.IDLE,
         val authExpired: Boolean = false,
     )
 
     private val fieldStateFlow = MutableStateFlow(FieldState())
     val fieldState: StateFlow<FieldState> get() = fieldStateFlow
 
-    private class Components(context: Context) {
+    private class Components(context: Context, val scope: CoroutineScope) {
         val appContext: Context = context.applicationContext
         val karooSystem = KarooSystemService(appContext).also { service ->
             service.connect { connected ->
@@ -55,17 +61,22 @@ object GarageRuntime {
         val authClient = AuthClient(http)
         val haClient = HomeAssistantClient(http, authClient, configStore)
         val repository = EntityRepository(http)
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         // Declared last: it needs scope and the clients above to already exist.
         val batteryReporter = BatteryReporter(appContext, karooSystem, http, configStore, scope)
     }
 
-    @Volatile
-    private var components: Components? = null
+    private val lifecycle = RuntimeLifecycle<Components>(close = { c ->
+        c.batteryReporter.stop()
+        // Throws if the bind never happened; there is nothing left to release then.
+        runCatching { c.karooSystem.disconnect() }
+            .onFailure { Log.w(TAG, "disconnect failed: ${it.javaClass.simpleName}") }
+    })
 
-    @Synchronized
     private fun components(context: Context): Components =
-        components ?: Components(context).also { components = it }
+        lifecycle.get { scope -> Components(context, scope) }.value
+
+    private val commandGate = CommandGate(cooldownMs = DEBOUNCE_MS)
+    private val commandRunner = CommandRunner(commandGate)
 
     /**
      * Called from GarageExtension.onCreate: starts the Karoo bind at service
@@ -79,94 +90,142 @@ object GarageRuntime {
     /**
      * Called from GarageExtension.onDestroy: the host is going away, and
      * stopView is not guaranteed to have been delivered for live views.
+     * Cancels every runtime job (trigger, poll, alert retry, battery report),
+     * disconnects from the Karoo system and drops the components; a later
+     * extension instance gets fresh ones. Safe mid-trigger: the command gate
+     * treats the cancelled request as finished and starts its cooldown.
      */
     @Synchronized
     fun reset() {
         activeViews = 0
-        pollJob?.cancel()
         pollJob = null
-        components?.batteryReporter?.stop()
+        lifecycle.reset()
+        fieldStateFlow.value = FieldState()
     }
 
     /** Settings buttons: "Send now" (kind=report) and "Dump devices" (kind=dump). */
     suspend fun sendBatteryReportNow(context: Context, kind: String): Result<Unit> =
         components(context).batteryReporter.sendNow(kind)
 
-    // ---- Trigger (BonusAction + field tap) ----
+    /**
+     * Best-effort server-side revocation of an OAuth session the app has already dropped
+     * locally (a .kgcfg import replaced it). Runs on the runtime scope so it outlives the
+     * short-lived import activity (a runtime teardown cancels it). Failures are logged
+     * without the token and otherwise ignored; the session still shows in the HA profile
+     * for manual revocation.
+     */
+    fun revokeBestEffort(context: Context, session: ConfigImport.Session) {
+        val c = components(context)
+        c.scope.launch {
+            c.authClient.revoke(session.baseUrl, session.refreshToken)
+                .onFailure { Log.w(TAG, "revoking replaced OAuth session failed: ${it.javaClass.simpleName}") }
+        }
+    }
 
-    @Volatile
-    private var lastTriggerAt = 0L
+    // ---- Trigger (BonusAction + field tap) ----
 
     fun trigger(context: Context) {
         val c = components(context)
-
-        // BLE-tunnelled commands can take 20s+ to arrive; a retry meanwhile
-        // becomes a second toggle that reverses the first (seen in the wild:
-        // door opened, then re-closed by the impatient second press).
-        synchronized(this) {
-            val now = System.currentTimeMillis()
-            if (now - lastTriggerAt < DEBOUNCE_MS) {
-                dispatchAlert(
-                    c,
-                    title = c.appContext.getString(R.string.alert_debounced_title),
-                    detail = c.appContext.getString(R.string.alert_debounced_detail),
-                    isError = false,
-                )
-                return
+        commandRunner.run(
+            scope = c.scope,
+            // Checked before the gate, so an unconfigured press never starts the cooldown.
+            isConfigured = { c.configStore.load()?.isValid() == true },
+            send = { c.haClient.trigger() },
+        ) { event -> onCommandEvent(c, event) }
+            // Torn down mid-request: no terminal event comes, so don't leave a
+            // recreated field stuck on SENDING.
+            ?.invokeOnCompletion { cause ->
+                if (cause != null) {
+                    fieldStateFlow.update {
+                        if (it.command == CommandPhase.SENDING) it.copy(command = CommandPhase.IDLE) else it
+                    }
+                }
             }
-            lastTriggerAt = now
-        }
+    }
 
-        val state = c.configStore.load()
-        if (state == null || !state.isValid()) {
-            dispatchAlert(
+    private fun onCommandEvent(c: Components, event: CommandRunner.Event) {
+        val ctx = c.appContext
+        when (event) {
+            CommandRunner.Event.NotConfigured -> dispatchAlert(
                 c,
-                title = c.appContext.getString(R.string.alert_not_configured_title),
-                detail = c.appContext.getString(R.string.alert_not_configured_detail),
+                title = ctx.getString(R.string.alert_not_configured_title),
+                detail = ctx.getString(R.string.alert_not_configured_detail),
                 isError = true,
             )
-            return
-        }
-
-        dispatchAlert(
-            c,
-            title = c.appContext.getString(R.string.alert_triggered_title),
-            detail = c.appContext.getString(R.string.alert_triggered_detail),
-            isError = false,
-            autoDismissMs = 2_000L,
-        )
-        fieldStateFlow.update { it.copy(sending = true) }
-
-        c.scope.launch {
-            c.haClient.trigger()
-                .onFailure { error ->
-                    Log.w(TAG, "HA call failed", error)
-                    val detail = when {
-                        error is ReauthRequiredException ->
-                            c.appContext.getString(R.string.alert_reauth_detail)
-                        error.message?.contains("timed out") == true ->
-                            c.appContext.getString(R.string.alert_timeout_detail)
-                        else -> error.message
-                            ?: c.appContext.getString(R.string.alert_failed_detail_fallback)
-                    }
-                    dispatchAlert(
-                        c,
-                        title = c.appContext.getString(R.string.alert_failed_title),
-                        detail = detail,
-                        isError = true,
-                    )
+            CommandRunner.Event.StillSending -> dispatchAlert(
+                c,
+                title = ctx.getString(R.string.alert_still_sending_title),
+                detail = ctx.getString(R.string.alert_still_sending_detail),
+                isError = false,
+            )
+            CommandRunner.Event.CoolingDown -> dispatchAlert(
+                c,
+                title = ctx.getString(R.string.alert_debounced_title),
+                detail = ctx.getString(R.string.alert_debounced_detail),
+                isError = false,
+            )
+            CommandRunner.Event.Sending -> {
+                dispatchAlert(
+                    c,
+                    title = ctx.getString(R.string.alert_triggered_title),
+                    detail = ctx.getString(R.string.alert_triggered_detail),
+                    isError = false,
+                    autoDismissMs = 2_000L,
+                )
+                fieldStateFlow.update { it.copy(command = CommandPhase.SENDING) }
+            }
+            CommandRunner.Event.Done -> {
+                dispatchAlert(
+                    c,
+                    title = ctx.getString(R.string.alert_triggered_title),
+                    detail = ctx.getString(R.string.alert_done_detail),
+                    isError = false,
+                    autoDismissMs = 2_000L,
+                )
+                fieldStateFlow.update { it.copy(command = CommandPhase.IDLE, authExpired = false) }
+                // Catch the door's transition (opening -> open) quickly.
+                restartPolling(c, burst = true)
+            }
+            CommandRunner.Event.TimedOut -> {
+                Log.w(TAG, "HA call timed out")
+                dispatchAlert(
+                    c,
+                    title = ctx.getString(R.string.alert_failed_title),
+                    detail = ctx.getString(R.string.alert_timeout_detail),
+                    isError = true,
+                )
+                fieldStateFlow.update { it.copy(command = CommandPhase.TIMED_OUT) }
+                // It may still land: watch for the door moving, and drop the
+                // "no reply" marker once the cooldown is over.
+                restartPolling(c, burst = true)
+                c.scope.launch {
+                    delay(DEBOUNCE_MS)
                     fieldStateFlow.update {
-                        it.copy(
-                            sending = false,
-                            authExpired = error is ReauthRequiredException,
-                        )
+                        if (it.command == CommandPhase.TIMED_OUT) it.copy(command = CommandPhase.IDLE) else it
                     }
                 }
-                .onSuccess {
-                    fieldStateFlow.update { it.copy(sending = false) }
-                    // Catch the door's transition (opening -> open) quickly.
-                    restartPolling(c, burst = true)
+            }
+            is CommandRunner.Event.Failed -> {
+                val error = event.error
+                Log.w(TAG, "HA call failed: ${error.javaClass.simpleName}")
+                val detail = if (error is ReauthRequiredException) {
+                    ctx.getString(R.string.alert_reauth_detail)
+                } else {
+                    error.message ?: ctx.getString(R.string.alert_failed_detail_fallback)
                 }
+                dispatchAlert(
+                    c,
+                    title = ctx.getString(R.string.alert_failed_title),
+                    detail = detail,
+                    isError = true,
+                )
+                fieldStateFlow.update {
+                    it.copy(
+                        command = CommandPhase.IDLE,
+                        authExpired = error is ReauthRequiredException,
+                    )
+                }
+            }
         }
     }
 
@@ -299,6 +358,9 @@ object GarageRuntime {
     private const val POLL_INTERVAL_MS = 20_000L
     private const val ALERT_RETRY_WINDOW_MS = 5_000L
 
-    /** Ignore re-presses while a command may still be in transit. */
+    /**
+     * Cooldown after a command resolves (done, failed, timed out or torn
+     * down). Presses while one is still in flight are refused outright.
+     */
     private const val DEBOUNCE_MS = 20_000L
 }

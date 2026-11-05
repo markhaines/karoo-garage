@@ -136,8 +136,16 @@ want to control (Developer Tools → States, e.g. `cover.garage_door`).
    copy `garage.kgcfg` into the Karoo's `Download` folder.
 3. On the Karoo, open the file manager, find `garage.kgcfg`, and tap it.
 4. Android offers **Garage** as the handler — pick it.
-5. You'll see "Configuration imported." The file is read once into encrypted
-   storage; the file itself can be deleted.
+5. A dialog shows the server, entity and action the file would set (never the
+   token). Tap **Import** to save it, or **Cancel** to keep your current setup
+   untouched. If the import replaces an OAuth login, the app logs that session
+   out of Home Assistant too (best-effort; check your HA profile if you were
+   offline). The file is read once into encrypted storage; the file itself can
+   be deleted.
+
+   The importer only accepts a `.kgcfg` opened from a file manager (or pushed by
+   `push-config.sh`), refuses anything over 8 KB, and rejects malformed JSON,
+   unknown fields, and URLs with credentials, a query or a fragment.
 
 This works because tapping the file in the Karoo's file manager grants the
 app a `content://` URI for it. Don't try to shortcut it over adb: a file
@@ -158,7 +166,8 @@ For people building from source who already have `adb`:
 This pushes the file to the app's own external-files directory
 (`/sdcard/Android/data/<package>/files/`), which the app can read without
 any storage permission, triggers the import activity, and then deletes the
-file from the device (it contains your token in plaintext). Pass `--debug`
+file from the device (it contains your token in plaintext). Confirm the import
+on the Karoo when the dialog appears. Pass `--debug`
 (or a full package name) as the second argument if you installed the debug
 build instead of the release one.
 </details>
@@ -318,11 +327,15 @@ Latency over the BLE-tunnelled path is ~1–2 seconds per request in good
 conditions, and has been observed exceeding 20 seconds in the wild (vs ~50ms
 direct over WiFi). The app allows 30 seconds before declaring a timeout, and
 a timeout doesn't necessarily mean failure — the command can still be in
-transit and land afterwards. That's also why the app ignores re-presses for
-20 seconds: with `toggle`, a queued duplicate arriving late reverses the
-door the first press just opened. If you only ever trigger this arriving
-home, consider setting the service to `open_cover` instead of `toggle` —
-it's idempotent, so a duplicate can never close the door on you.
+transit and land afterwards. That's also why the app sends one command at a
+time: a press while the last one is still waiting for Home Assistant is
+refused ("Still sending"), and so is a press within 20 seconds of it
+finishing, timing out or failing ("Already sent"). With `toggle`, a duplicate
+arriving late reverses the door the first press just opened. The Garage field
+shows SENDING… while a command is out and NO REPLY after a timeout. If you
+only ever trigger this arriving home, set the service to `open_cover` instead
+of `toggle` (the setup screen suggests it) — it's idempotent, so a duplicate
+can never close the door on you.
 
 If you see "no route to host" when testing remotely, the Karoo has no
 internet path at all — check that the Companion app is open on your phone
@@ -408,6 +421,10 @@ app/src/main/
 │   ├── HaDiscovery.kt                  # mDNS discovery of HA on the LAN
 │   ├── ConfigStore.kt                  # EncryptedSharedPreferences wrapper
 │   ├── Config.kt                       # legacy .kgcfg import shape
+│   ├── ConfigImport.kt                 # .kgcfg source/size/content checks + confirm
+│   ├── GarageRuntime.kt                # process-wide runtime: trigger, poller, teardown
+│   ├── GarageCommand.kt                # one command at a time + cooldown
+│   ├── RuntimeLifecycle.kt             # runtime scope/connection create + teardown
 │   ├── SettingsActivity.kt             # login / entity picker / legacy UI
 │   ├── EntityPickerActivity.kt         # tap-to-choose entity list
 │   └── ImportConfigActivity.kt         # handles .kgcfg file open intent

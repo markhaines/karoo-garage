@@ -25,6 +25,8 @@ from reading the code. The test is whether it would drift if nobody wrote it dow
 | ADR | Title | Status |
 |---|---|---|
 | [0001](0001-oauth-login-not-pasted-tokens.md) | Sign in with Home Assistant's own OAuth flow, never a pasted token | Accepted |
+| [0002](0002-config-import-is-untrusted-input.md) | Treat a .kgcfg import as untrusted input, confirmed before it replaces anything | Accepted |
+| [0003](0003-one-garage-command-at-a-time.md) | One garage command at a time; cooldown from its end, surviving runtime teardown | Accepted |
 
 ## Candidates, not yet written
 

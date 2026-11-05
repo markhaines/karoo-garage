@@ -5,7 +5,36 @@ APK through `release.yml`. Reconstructed from tags and history on 2026-10-02.
 
 ## Unreleased
 
+### Security
+- `.kgcfg` import hardened (#6): VIEW only (SEND and BROWSABLE removed), `content://` `.kgcfg`
+  files or `file://` inside the app's own folder only, 8 KB cap, strict parsing, and a
+  confirmation dialog showing server, entity and action (never the token) before anything is
+  saved. Cancel leaves the current setup untouched. An OAuth login replaced by an import is
+  revoked on the server, best-effort. Parse errors are no longer logged with their message,
+  which could quote the token. ADR-0002.
+
+### Fixed
+- One garage command at a time (#5). A press while the previous command is unresolved is
+  refused, so a slow Bluetooth-tunnel `toggle` can no longer be followed by a second one that
+  reverses the door. The 20 second cooldown now runs from the command's end (done, failed,
+  timed out or cancelled), not the press, and an unconfigured press no longer consumes it.
+  The cooldown is timed on a monotonic clock, so a time-sync step back cannot hold the
+  button shut.
+  Alerts and the Garage field tell sending, still sending, already sent, done and no reply
+  apart. Setup suggests `open_cover` as the safest action. ADR-0003.
+- Extension teardown now releases the runtime (#7): every job (trigger, poll, alert retry,
+  battery report) runs in one scope with its own SupervisorJob, which teardown cancels before
+  disconnecting from the Karoo system and dropping the cached components. The next instance
+  builds fresh ones; the command cooldown carries over so a restart cannot double-toggle.
+
 ### Added
+- 16 unit tests over command serialization and runtime teardown, on virtual time with a fake
+  Home Assistant and a fake Karoo connection: a 25 second request emits one call, cooldown from
+  the terminal event, unconfigured presses, distinct outcomes, teardown mid-request, and 25
+  create/destroy cycles leaving one connection and no live jobs, and a clock stepping back.
+- 22 unit tests over the import checks: oversized and endless streams, malformed and
+  unexpected content, externally supplied intents, confirm/cancel/revoke behaviour, and LAN
+  addresses (including underscore hostnames like `http://my_ha:8123`) that main accepted.
 - 13 unit tests over Home Assistant's login flow as the extension parses it: success,
   missing code, the MFA step, humanised errors, an error on the MFA step winning over
   re-asking, abort, unknown types, and MFA module auto-selection (TOTP preferred, never
@@ -20,6 +49,10 @@ APK through `release.yml`. Reconstructed from tags and history on 2026-10-02.
   companion object as `internal`, so the tests can reach them. They used no instance state;
   call sites are unchanged.
 - `GLOSSARY.md` became `CONTEXT.md`, in the domain-modeling skill's format.
+- Our own request timeout is now a typed `RequestTimeoutException` instead of matching
+  "timed out" in the message.
+- `AuthMode` and `GarageState` moved from `ConfigStore.kt` to `GarageState.kt` unchanged, so
+  pure logic that uses them compiles without Android.
 
 ## 1.2.0 — 2026-09-02
 
