@@ -182,6 +182,19 @@ class GarageCommandTest {
     }
 
     @Test
+    fun `a clock that steps backwards ends the cooldown instead of extending it`() {
+        var now = 1_000_000_000L
+        val gate = CommandGate(cooldown) { now }
+        assertEquals(CommandGate.Decision.START, gate.tryStart())
+        gate.finish()
+        now += 5_000
+        assertEquals(CommandGate.Decision.COOLING_DOWN, gate.tryStart())
+
+        now -= 3_600_000 // time sync steps the clock back an hour
+        assertEquals(CommandGate.Decision.START, gate.tryStart())
+    }
+
+    @Test
     fun `simultaneous presses from many threads start one command`() {
         val gate = CommandGate(cooldown)
         val starts = AtomicInteger()

@@ -17,24 +17,34 @@ class RequestTimeoutException(message: String) : IOException(message)
  * The gate is busy from [tryStart] until [finish], and then cools down for [cooldownMs]
  * measured from that terminal event, not from the press. Callers check configuration before
  * [tryStart], so an unconfigured press never consumes the gate.
+ *
+ * The default [clock] is monotonic. The wall clock can step (network or GPS time sync), and a
+ * step back would otherwise hold the gate shut for as long as the step. An injected clock that
+ * goes backwards is treated the same way: the cooldown counts as over, never as extended.
  */
 class CommandGate(
     private val cooldownMs: Long,
-    private val clock: () -> Long = System::currentTimeMillis,
+    private val clock: () -> Long = { System.nanoTime() / 1_000_000 },
 ) {
     enum class Decision { START, IN_FLIGHT, COOLING_DOWN }
 
     private var inFlight = false
-    private var coolUntil = Long.MIN_VALUE
+    private var finishedAt: Long? = null
 
     @Synchronized
     fun tryStart(): Decision = when {
         inFlight -> Decision.IN_FLIGHT
-        clock() < coolUntil -> Decision.COOLING_DOWN
+        coolingDown() -> Decision.COOLING_DOWN
         else -> {
             inFlight = true
             Decision.START
         }
+    }
+
+    private fun coolingDown(): Boolean {
+        val at = finishedAt ?: return false
+        val elapsed = clock() - at
+        return elapsed in 0 until cooldownMs
     }
 
     /** The command reached a terminal outcome. Idempotent. */
@@ -42,7 +52,7 @@ class CommandGate(
     fun finish() {
         if (!inFlight) return
         inFlight = false
-        coolUntil = clock() + cooldownMs
+        finishedAt = clock()
     }
 
     @get:Synchronized
