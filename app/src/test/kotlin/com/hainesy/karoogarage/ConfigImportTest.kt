@@ -169,6 +169,33 @@ class ConfigImportTest {
     }
 
     @Test
+    fun `LAN addresses main accepted still import, including underscore hostnames`() {
+        for ((url, origin) in listOf(
+            "http://homeassistant.local:8123" to "http://homeassistant.local:8123",
+            "http://192.168.1.10:8123" to "http://192.168.1.10:8123",
+            "http://[fe80::1]:8123" to "http://[fe80::1]:8123",
+            "http://my_ha:8123" to "http://my_ha:8123",
+            "https://HA_Server.lan" to "https://ha_server.lan",
+        )) {
+            assertEquals(origin, ConfigImport.Pending(ConfigImport.parse(cfg(baseUrl = url).toByteArray())).summary.origin)
+        }
+    }
+
+    @Test
+    fun `the underscore-hostname path refuses anything but host and port`() {
+        for (url in listOf(
+            "http://my_ha:99999",
+            "http://my_ha:0",
+            "http://my_ha:abc",
+            "http://user@my_ha:8123",
+            "http://my_ha;x=1",
+            "http://my_ha:8123/?q=1",
+        )) {
+            rejected { ConfigImport.parse(cfg(baseUrl = url).toByteArray()) }
+        }
+    }
+
+    @Test
     fun `entity, domain and service must be Home Assistant slugs`() {
         rejected { ConfigImport.parse(cfg(entityId = "garage_door").toByteArray()) }
         rejected { ConfigImport.parse(cfg(entityId = "cover.garage door").toByteArray()) }

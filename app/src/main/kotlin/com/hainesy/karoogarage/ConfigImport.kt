@@ -145,18 +145,30 @@ object ConfigImport {
             throw Rejected("invalid server URL")
         }
         val scheme = uri.scheme?.lowercase()
-        val host = uri.host
         if ((scheme != "http" && scheme != "https") ||
-            host.isNullOrEmpty() ||
             uri.rawUserInfo != null ||
             uri.rawQuery != null ||
             uri.rawFragment != null
         ) {
             throw Rejected("invalid server URL")
         }
-        val port = if (uri.port != -1) ":${uri.port}" else ""
-        return "$scheme://${host.lowercase()}$port"
+        val host = uri.host
+        if (!host.isNullOrEmpty()) {
+            val port = if (uri.port != -1) ":${uri.port}" else ""
+            return "$scheme://${host.lowercase()}$port"
+        }
+        // java.net.URI only parses RFC 2396 hostnames. One with an underscore (my_ha.lan, a
+        // Docker or router name) comes back with no host, only a raw authority. Main accepted
+        // those, so accept exactly that shape here: host characters and an optional port.
+        val match = UNDERSCORE_AUTHORITY.matchEntire(uri.rawAuthority.orEmpty())
+            ?: throw Rejected("invalid server URL")
+        val port = match.groupValues[2]
+        if (port.isNotEmpty() && port.toInt() !in 1..65535) throw Rejected("invalid server URL")
+        return "$scheme://${match.groupValues[1].lowercase()}${if (port.isEmpty()) "" else ":$port"}"
     }
+
+    private val UNDERSCORE_AUTHORITY =
+        Regex("^([A-Za-z0-9_](?:[A-Za-z0-9_.-]*[A-Za-z0-9_])?)(?::([0-9]{1,5}))?$")
 
     fun summarise(config: Config): Summary = Summary(
         origin = originOf(config.baseUrl),
