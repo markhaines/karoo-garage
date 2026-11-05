@@ -5,12 +5,23 @@ on:
     tags:
       - 'v*'
 
-permissions:
-  contents: write
+# Each job asks for what it needs: the checks read packages, only the release writes.
+permissions: {}
 
 jobs:
+  # The same tests, lint and debug build that gate main and PRs (#8). Nothing is signed
+  # or published unless they pass on the tagged commit.
+  checks:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      packages: read
+
   build:
+    needs: checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 

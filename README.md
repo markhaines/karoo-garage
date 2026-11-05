@@ -374,7 +374,9 @@ adb logcat -s GarageExtension     # tail extension logs
 Tagged commits matching `v*` (e.g. `v0.1.0`) trigger
 [`.github/workflows/release.yml`](./.github/workflows/release.yml), which
 builds a signed release APK with R8 minification and attaches it to a GitHub
-Release.
+Release. It first runs [`ci.yml`](./.github/workflows/ci.yml) (unit tests,
+Android Lint and a debug build, the same checks every pull request and push
+to `main` gets), and nothing is signed unless they pass.
 
 To cut a release as a maintainer:
 

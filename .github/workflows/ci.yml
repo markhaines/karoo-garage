@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # release.yml calls this before signing, so a tag runs exactly these checks (#8).
+  workflow_call:
 
 permissions:
   contents: read
@@ -21,7 +23,8 @@ jobs:
           distribution: temurin
           java-version: "17"
       # The runner image ships an Android SDK with licences accepted. Release builds
-      # stay in release.yml (tag-triggered, signed); this only gates main and PRs.
+      # stay in release.yml (tag-triggered, signed), which runs this workflow first.
+      # Unit tests use fake transports only: CI never calls a Home Assistant server.
       - name: Test, lint, build
         env:
           GITHUB_ACTOR: ${{ github.actor }}
