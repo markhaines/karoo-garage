@@ -109,7 +109,8 @@ class EntityRepository(private val http: KarooHttp) {
 
     /**
      * Returns the instance's advertised public URL (HA Settings → System →
-     * Network → "Internet" URL), or null when none is configured.
+     * Network → "Internet" URL), or null when none is configured or it fails
+     * [ServerUrl.externalOrNull]: the same checks as a typed URL, and HTTPS only.
      */
     suspend fun fetchExternalUrl(
         baseUrl: String,
@@ -127,8 +128,7 @@ class EntityRepository(private val http: KarooHttp) {
             .jsonObject["external_url"]
         when {
             external == null || external is JsonNull -> null
-            else -> external.jsonPrimitive.content.trim().trimEnd('/')
-                .takeIf { it.startsWith("http://") || it.startsWith("https://") }
+            else -> ServerUrl.externalOrNull(external.jsonPrimitive.content)
         }
     }
 

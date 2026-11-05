@@ -374,7 +374,9 @@ adb logcat -s GarageExtension     # tail extension logs
 Tagged commits matching `v*` (e.g. `v0.1.0`) trigger
 [`.github/workflows/release.yml`](./.github/workflows/release.yml), which
 builds a signed release APK with R8 minification and attaches it to a GitHub
-Release.
+Release. It first runs [`ci.yml`](./.github/workflows/ci.yml) (unit tests,
+Android Lint and a debug build, the same checks every pull request and push
+to `main` gets), and nothing is signed unless they pass.
 
 To cut a release as a maintainer:
 
@@ -403,6 +405,7 @@ app/src/main/
 │   ├── GarageExtension.kt              # KarooExtension subclass + BonusAction
 │   ├── KarooHttp.kt                    # HTTP via the karoo-ext bridge
 │   ├── AuthClient.kt                   # HA login_flow + token endpoints
+│   ├── ServerUrl.kt                    # server URL rules: canonical origin, HTTPS unless local
 │   ├── HomeAssistantClient.kt          # service call + silent token refresh
 │   ├── EntityRepository.kt             # compact entity list via /api/template
 │   ├── HaDiscovery.kt                  # mDNS discovery of HA on the LAN
@@ -431,6 +434,12 @@ app/src/main/
   your password itself is never stored — it's exchanged for tokens during
   login and discarded.
 - No credentials are embedded in the APK.
+- The server URL must be `https://`, except on your home network: plain
+  `http://` is accepted only for a local address (`192.168.x.x`, `10.x.x.x`,
+  `172.16-31.x.x`, link-local and private IPv6, `*.local`, `*.home.arpa`),
+  and the app warns before sending your password or token over it. URLs with
+  a username, a path, `?` or `#` are refused. HA's advertised public URL is
+  only offered when it is HTTPS. See [ADR-0004](docs/adr/0004-https-except-local-addresses.md).
 - The HTTP client trusts the system trust store. Self-signed Home Assistant
   certs won't validate. Use Let's Encrypt via your reverse proxy, or front
   Home Assistant with [Caddy](https://caddyserver.com/) /

@@ -1,0 +1,35 @@
+# Dependency update monitoring (#8). Pull requests from here run ci.yml like any other.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # AGP and Kotlin (and the Compose compiler plugin, versioned with Kotlin) move together.
+      build-tooling:
+        patterns:
+          - "com.android.*"
+          - "org.jetbrains.kotlin*"
+      androidx:
+        patterns:
+          - "androidx.*"
+          - "com.google.android.material*"
+      kotlinx:
+        patterns:
+          - "org.jetbrains.kotlinx*"
+    ignore:
+      # Served from GitHub Packages, which needs a read:packages token Dependabot does not
+      # have here. Bumped by hand against the karoo-ext release notes and the tag in
+      # gradle/libs.versions.toml.
+      - dependency-name: "io.hammerhead:karoo-ext"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns:
+          - "*"

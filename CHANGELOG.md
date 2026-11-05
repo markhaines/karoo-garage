@@ -14,12 +14,35 @@ APK through `release.yml`. Reconstructed from tags and history on 2026-10-02.
 - CI on every push to `main` and every pull request: the unit tests, Android Lint (fails on
   any error) and a debug build. Release builds stay tag-triggered.
 - This changelog. Completes Dev tier 3.
+- 13 unit tests over the OAuth rules of a garage press (#8), against a fake transport: cached
+  token reuse and the one-minute expiry margin, exactly one refresh and one retry on a 401, no
+  retry on any other status or on a timeout (a late command could still land), and "log in
+  again" only when the refresh is answered 400 or 401. The rules moved from
+  `HomeAssistantClient` into `OauthRetry` to make them testable; behaviour is unchanged.
+- Release builds now run the full CI workflow (tests, lint, debug build) on the tagged commit
+  before anything is signed or published (#8).
+- Dependabot watches Gradle and GitHub Actions dependencies weekly (#8). `karoo-ext` is
+  excluded: it lives on GitHub Packages, which Dependabot cannot read here, so it is bumped by
+  hand.
 
 ### Changed
 - `parseLoginStep`, `mfaModuleToSelect` and `humaniseError` moved into `AuthClient`'s
   companion object as `internal`, so the tests can reach them. They used no instance state;
   call sites are unchanged.
 - `GLOSSARY.md` became `CONTEXT.md`, in the domain-modeling skill's format.
+
+### Security
+- Server URLs are parsed structurally and stored as a canonical origin (#9). Userinfo, query,
+  fragment, any path, IPv6 zones and invalid ports are refused. HTTPS is required except for a
+  local address (private or link-local IPv4/IPv6, loopback, `.local`, `.home.arpa`), and the
+  app warns before a password or token goes out over local HTTP. Login, the legacy form,
+  `.kgcfg` import, mDNS discovery and HA's advertised public URL all use the same validator,
+  `ServerUrl`. Discovery prefers HA's HTTPS `internal_url` from its mDNS record when there is
+  one. Underscore hostnames keep working, as in PR #11's importer. 22 unit tests. ADR-0004.
+- **Breaking for remote HTTP setups:** a stored `http://` URL that is not local now stops the
+  garage action with "server URL can only use http:// on your home network" instead of
+  sending the token. That includes a bare name such as `http://homeassistant:8123`, which
+  is not provably local. Switch to HTTPS, or log in again with a local IP or `.local` name.
 
 ## 1.2.0 — 2026-09-02
 

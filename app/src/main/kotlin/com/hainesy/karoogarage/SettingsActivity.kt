@@ -300,11 +300,14 @@ class SettingsActivity : AppCompatActivity() {
     // ---- OAuth login ----
 
     private fun onStartLogin() {
-        val baseUrl = editBaseUrl.text?.toString()?.trim()?.trimEnd('/').orEmpty()
-        if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
-            status.text = getString(R.string.status_invalid_url)
+        val origin = ServerUrl.parse(editBaseUrl.text?.toString().orEmpty()).getOrElse { error ->
+            status.text = getString(R.string.status_url_rejected, urlProblem(error))
             return
         }
+        confirmCleartext(origin) { startLogin(origin.value) }
+    }
+
+    private fun startLogin(baseUrl: String) {
         status.text = getString(R.string.status_logging_in)
         lifecycleScope.launch {
             authClient.startLoginFlow(baseUrl)
@@ -498,6 +501,46 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    // ---- Server URL checks (issue #9, ADR-0004) ----
+
+    private fun urlProblem(error: Throwable): String =
+        (error as? ServerUrl.InvalidServerUrlException)?.reason?.detail
+            ?: ServerUrl.Reason.MALFORMED.detail
+
+    /**
+     * Plain HTTP is only ever allowed to a local address, and never silently: the rider
+     * confirms before a password or token is sent over it. HTTPS runs [proceed] at once.
+     */
+    private fun confirmCleartext(origin: ServerUrl.Origin, proceed: () -> Unit) {
+        if (!origin.isCleartext) {
+            proceed()
+            return
+        }
+        if (isFinishing) return
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.dialog_cleartext_title)
+            .setMessage(getString(R.string.dialog_cleartext_message, origin.value))
+            .setPositiveButton(R.string.dialog_cleartext_accept) { _, _ -> proceed() }
+            .setNegativeButton(R.string.dialog_cleartext_cancel) { _, _ ->
+                status.text = getString(R.string.status_cleartext_cancelled)
+            }
+            .show()
+    }
+
+    /** The legacy form's config, if it is complete and its URL passes; else shows why not. */
+    private fun validLegacyConfigOrNull(): Pair<Config, ServerUrl.Origin>? {
+        val config = readLegacyConfig()
+        val origin = ServerUrl.parse(config.baseUrl).getOrElse { error ->
+            status.text = getString(R.string.status_url_rejected, urlProblem(error))
+            return null
+        }
+        if (!config.isValid()) {
+            status.text = getString(R.string.status_invalid)
+            return null
+        }
+        return config to origin
+    }
+
     // ---- Legacy token mode ----
 
     private fun readLegacyConfig(): Config = Config(
@@ -524,22 +567,20 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun onLegacySave() {
-        val config = readLegacyConfig()
-        if (!config.isValid()) {
-            status.text = getString(R.string.status_invalid)
-            return
+        val (config, origin) = validLegacyConfigOrNull() ?: return
+        confirmCleartext(origin) {
+            revokeObsoleteOauthSession()
+            configStore.save(config)
+            status.text = getString(R.string.status_saved)
         }
-        revokeObsoleteOauthSession()
-        configStore.save(config)
-        status.text = getString(R.string.status_saved)
     }
 
     private fun onLegacyTest() {
-        val config = readLegacyConfig()
-        if (!config.isValid()) {
-            status.text = getString(R.string.status_invalid)
-            return
-        }
+        val (config, origin) = validLegacyConfigOrNull() ?: return
+        confirmCleartext(origin) { legacyTest(config) }
+    }
+
+    private fun legacyTest(config: Config) {
         revokeObsoleteOauthSession()
         configStore.save(config)
         status.text = getString(R.string.status_testing)

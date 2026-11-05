@@ -38,8 +38,7 @@ data class GarageState(
     val accountName: String?,
 ) {
     fun isValid(): Boolean {
-        val serverOk = baseUrl.isNotBlank() &&
-            (baseUrl.startsWith("http://") || baseUrl.startsWith("https://"))
+        val serverOk = ServerUrl.parse(baseUrl).isSuccess
         val actionOk = entityId.isNotBlank() && domain.isNotBlank() && service.isNotBlank()
         val authOk = when (authMode) {
             AuthMode.LEGACY_TOKEN -> !token.isNullOrBlank()

@@ -8,8 +8,9 @@ import android.util.Log
 /**
  * Best-effort mDNS discovery of Home Assistant on the local network
  * (HA advertises _home-assistant._tcp). Fills the URL field so most
- * users never type their server address. Failures are silent — the
- * user can always type the URL.
+ * users never type their server address. Failures are silent: the
+ * user can always type the URL. The offered URL goes through
+ * [ServerUrl.discovered], so it is HTTPS or a local address.
  */
 class HaDiscovery(context: Context) {
 
@@ -34,15 +35,13 @@ class HaDiscovery(context: Context) {
                     object : NsdManager.ResolveListener {
                         override fun onResolveFailed(info: NsdServiceInfo, errorCode: Int) = Unit
                         override fun onServiceResolved(info: NsdServiceInfo) {
-                            val addr = info.host ?: return
-                            val raw = addr.hostAddress ?: return
-                            // IPv6 literals need brackets, minus any %scope suffix.
-                            val host = if (addr is java.net.Inet6Address) {
-                                "[${raw.substringBefore('%')}]"
-                            } else {
-                                raw
-                            }
-                            val url = "http://$host:${info.port}"
+                            val raw = info.host?.hostAddress ?: return
+                            val internal = runCatching {
+                                info.attributes["internal_url"]?.decodeToString()
+                            }.getOrNull()
+                            // Null when the address is not on the LAN: never offer
+                            // plain HTTP to anywhere else.
+                            val url = ServerUrl.discovered(internal, raw, info.port) ?: return
                             Log.d(TAG, "Resolved HA instance ${info.serviceName} at $url")
                             onFound(info.serviceName, url)
                         }

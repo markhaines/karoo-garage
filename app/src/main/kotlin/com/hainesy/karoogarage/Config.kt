@@ -11,8 +11,7 @@ data class Config(
     val service: String = DEFAULT_SERVICE,
 ) {
     fun isValid(): Boolean =
-        baseUrl.isNotBlank() &&
-            (baseUrl.startsWith("http://") || baseUrl.startsWith("https://")) &&
+        ServerUrl.parse(baseUrl).isSuccess &&
             token.isNotBlank() &&
             entityId.isNotBlank() &&
             domain.isNotBlank() &&
@@ -20,7 +19,7 @@ data class Config(
 
     fun normalised(): Config =
         copy(
-            baseUrl = baseUrl.trim().trimEnd('/'),
+            baseUrl = baseUrl.trim().let { ServerUrl.canonicalOrNull(it) ?: it.trimEnd('/') },
             token = token.trim(),
             entityId = entityId.trim(),
             domain = domain.trim(),

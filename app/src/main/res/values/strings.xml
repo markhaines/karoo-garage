@@ -60,8 +60,15 @@
     <string name="login_intro">Signing in to %1$s</string>
 
     <string name="status_saved">Saved.</string>
-    <string name="status_invalid">Please fill every field; URL must start with http:// or https://.</string>
-    <string name="status_invalid_url">Enter your Home Assistant URL first (http:// or https://).</string>
+    <string name="status_invalid">Please fill every field.</string>
+    <string name="status_url_rejected">Check the Home Assistant URL: it %1$s.</string>
+    <string name="status_cleartext_cancelled">Nothing sent. Use an https:// address to keep your login encrypted.</string>
+    <string name="dialog_cleartext_title">Send your login unencrypted?</string>
+    <string name="dialog_cleartext_message">%1$s uses http://, so your password or token crosses your home network unencrypted. Anyone on that network could read it.
+
+This only works on your home WiFi. An https:// address is safer and also works mid-ride.</string>
+    <string name="dialog_cleartext_accept">Send over http</string>
+    <string name="dialog_cleartext_cancel">Cancel</string>
     <string name="status_invalid_credentials">Enter your username and password.</string>
     <string name="status_logging_in">Signing in…</string>
     <string name="status_login_failed">Sign-in failed: %1$s</string>

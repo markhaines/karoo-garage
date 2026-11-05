@@ -9,15 +9,6 @@ import kotlinx.coroutines.withTimeout
 import java.io.IOException
 
 /**
- * A non-2xx HTTP response, carrying the status for callers that branch on it
- * (401 → retry with fresh token, 400 on refresh → re-login required).
- */
-class HttpStatusException(
-    val statusCode: Int,
-    detail: String? = null,
-) : java.io.IOException(if (detail != null) "HTTP $statusCode: $detail" else "HTTP $statusCode")
-
-/**
  * HTTP response from the karoo-ext bridge.
  */
 data class KarooHttpResponse(
